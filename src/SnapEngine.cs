@@ -35,7 +35,7 @@ namespace RhaegarMove
                     if (settings.EnableSnapDiagnostics)
                     {
                         SnapScoreDiagnostics.BeginSession(settings, "move-aero");
-                        SnapScoreDiagnostics.FinalDecision(settings, "move-aero", "aero", before, new RECT(x, y, x + width, y + height));
+                        SnapScoreDiagnostics.FinalDecision(settings, "move-aero", "aero", "aero", "aero", before, new RECT(x, y, x + width, y + height));
                     }
                     return true;
                 }
@@ -48,15 +48,12 @@ namespace RhaegarMove
             RECT desired = before;
             int threshold = Math.Max(0, settings.SnapThreshold);
             SnapToMonitorEdges(ref desired, pt, threshold, settings.SnapGap, settings);
-            bool monitorChanged = !SameRect(before, desired);
             RECT afterMonitor = desired;
 
-            bool windowChanged = false;
             if (settings.SnapToWindows && settings.AutoSnap >= 2)
             {
                 List<SnapTarget> targets = CollectTargets(hwnd, settings);
                 SnapToWindowEdges(ref desired, targets, threshold, settings.SnapGap, settings.AutoSnap >= 3, settings);
-                windowChanged = !SameRect(afterMonitor, desired);
             }
 
             if (desired.left != x || desired.top != y)
@@ -66,7 +63,9 @@ namespace RhaegarMove
                 changed = true;
             }
 
-            SnapScoreDiagnostics.FinalDecision(settings, "move", ClassifySource(monitorChanged, windowChanged), before, desired);
+            string xSource = ClassifyAxis(before.left, afterMonitor.left, desired.left);
+            string ySource = ClassifyAxis(before.top, afterMonitor.top, desired.top);
+            SnapScoreDiagnostics.FinalDecision(settings, "move", ClassifySource(xSource, ySource), xSource, ySource, before, desired);
             return changed;
         }
 
@@ -79,18 +78,17 @@ namespace RhaegarMove
             SnapScoreDiagnostics.BeginSession(settings, "resize");
             int threshold = Math.Max(0, settings.SnapThreshold);
             SnapResizeToMonitor(ref desired, edge, threshold, settings.SnapGap, settings);
-            bool monitorChanged = !SameRect(before, desired);
             RECT afterMonitor = desired;
 
-            bool windowChanged = false;
             if (settings.SnapToWindows && settings.AutoSnap >= 2)
             {
                 List<SnapTarget> targets = CollectTargets(hwnd, settings);
                 SnapResizeToWindows(ref desired, edge, targets, threshold, settings.SnapGap, settings.AutoSnap >= 3, settings);
-                windowChanged = !SameRect(afterMonitor, desired);
             }
 
-            SnapScoreDiagnostics.FinalDecision(settings, "resize", ClassifySource(monitorChanged, windowChanged), before, desired);
+            string xSource = ClassifyAxis(before.left, before.right, afterMonitor.left, afterMonitor.right, desired.left, desired.right);
+            string ySource = ClassifyAxis(before.top, before.bottom, afterMonitor.top, afterMonitor.bottom, desired.top, desired.bottom);
+            SnapScoreDiagnostics.FinalDecision(settings, "resize", ClassifySource(xSource, ySource), xSource, ySource, before, desired);
         }
 
         public static void ApplyStickyResize(IntPtr active, RECT before, RECT after, ResizeEdge edge, AppSettings settings)
@@ -307,9 +305,26 @@ namespace RhaegarMove
             }
         }
 
-        private static bool SameRect(RECT a, RECT b)
+        private static string ClassifyAxis(int before, int afterMonitor, int afterFinal)
         {
-            return a.left == b.left && a.top == b.top && a.right == b.right && a.bottom == b.bottom;
+            bool monitorChanged = before != afterMonitor;
+            bool windowChanged = afterMonitor != afterFinal;
+            return ClassifySource(monitorChanged, windowChanged);
+        }
+
+        private static string ClassifyAxis(int beforeA, int beforeB, int monitorA, int monitorB, int finalA, int finalB)
+        {
+            bool monitorChanged = beforeA != monitorA || beforeB != monitorB;
+            bool windowChanged = monitorA != finalA || monitorB != finalB;
+            return ClassifySource(monitorChanged, windowChanged);
+        }
+
+        private static string ClassifySource(string xSource, string ySource)
+        {
+            if (xSource == ySource) return xSource;
+            if (xSource == "none") return ySource;
+            if (ySource == "none") return xSource;
+            return xSource + "+" + ySource;
         }
 
         private static string ClassifySource(bool monitorChanged, bool windowChanged)
