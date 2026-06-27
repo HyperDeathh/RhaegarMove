@@ -38,9 +38,10 @@ namespace RhaegarMove
             if (!settings.EnableEdgeSnap || settings.AutoSnap <= 0)
                 return false;
 
+            SnapScoreDiagnostics.BeginSession(settings, "move");
             RECT desired = new RECT(x, y, x + width, y + height);
             int threshold = Math.Max(0, settings.SnapThreshold);
-            SnapToMonitorEdges(ref desired, pt, threshold, settings.SnapGap);
+            SnapToMonitorEdges(ref desired, pt, threshold, settings.SnapGap, settings);
 
             if (settings.SnapToWindows && settings.AutoSnap >= 2)
             {
@@ -63,8 +64,9 @@ namespace RhaegarMove
             if (!settings.EnableEdgeSnap || settings.AutoSnap <= 0)
                 return;
 
+            SnapScoreDiagnostics.BeginSession(settings, "resize");
             int threshold = Math.Max(0, settings.SnapThreshold);
-            SnapResizeToMonitor(ref desired, edge, threshold, settings.SnapGap);
+            SnapResizeToMonitor(ref desired, edge, threshold, settings.SnapGap, settings);
 
             if (settings.SnapToWindows && settings.AutoSnap >= 2)
             {
@@ -148,7 +150,7 @@ namespace RhaegarMove
             return false;
         }
 
-        private static void SnapToMonitorEdges(ref RECT desired, POINT pt, int threshold, int gap)
+        private static void SnapToMonitorEdges(ref RECT desired, POINT pt, int threshold, int gap, AppSettings settings)
         {
             RECT work;
             if (!Geometry.TryGetMonitorWorkArea(pt, out work))
@@ -156,6 +158,13 @@ namespace RhaegarMove
 
             int width = desired.Width;
             int height = desired.Height;
+            SnapScoreDiagnostics score = new SnapScoreDiagnostics(settings, "move-monitor", desired, threshold);
+            score.Candidate("monitor-left", work.left + gap - desired.left, threshold);
+            score.Candidate("monitor-top", work.top + gap - desired.top, threshold);
+            score.Candidate("monitor-right", work.right - width - gap - desired.left, threshold);
+            score.Candidate("monitor-bottom", work.bottom - height - gap - desired.top, threshold);
+            score.Flush();
+
             if (Math.Abs(desired.left - work.left) <= threshold) desired.left = work.left + gap;
             if (Math.Abs(desired.top - work.top) <= threshold) desired.top = work.top + gap;
             if (Math.Abs(desired.right - work.right) <= threshold) desired.left = work.right - width - gap;
@@ -164,12 +173,19 @@ namespace RhaegarMove
             desired.bottom = desired.top + height;
         }
 
-        private static void SnapResizeToMonitor(ref RECT desired, ResizeEdge edge, int threshold, int gap)
+        private static void SnapResizeToMonitor(ref RECT desired, ResizeEdge edge, int threshold, int gap, AppSettings settings)
         {
             POINT center = new POINT((desired.left + desired.right) / 2, (desired.top + desired.bottom) / 2);
             RECT work;
             if (!Geometry.TryGetMonitorWorkArea(center, out work))
                 return;
+
+            SnapScoreDiagnostics score = new SnapScoreDiagnostics(settings, "resize-monitor", desired, threshold);
+            if (edge.Left) score.Candidate("resize-left-to-monitor-left", desired.left - work.left, threshold);
+            if (edge.Right) score.Candidate("resize-right-to-monitor-right", desired.right - work.right, threshold);
+            if (edge.Top) score.Candidate("resize-top-to-monitor-top", desired.top - work.top, threshold);
+            if (edge.Bottom) score.Candidate("resize-bottom-to-monitor-bottom", desired.bottom - work.bottom, threshold);
+            score.Flush();
 
             if (edge.Left && Math.Abs(desired.left - work.left) <= threshold) desired.left = work.left + gap;
             if (edge.Right && Math.Abs(desired.right - work.right) <= threshold) desired.right = work.right - gap;
@@ -185,7 +201,7 @@ namespace RhaegarMove
             int bestDy = 0;
             int bestAbsX = threshold + 1;
             int bestAbsY = threshold + 1;
-            SnapScoreDiagnostics score = new SnapScoreDiagnostics(settings, "move", desired, threshold);
+            SnapScoreDiagnostics score = new SnapScoreDiagnostics(settings, "move-window", desired, threshold);
 
             foreach (SnapTarget target in targets)
             {
@@ -221,7 +237,7 @@ namespace RhaegarMove
 
         private static void SnapResizeToWindows(ref RECT desired, ResizeEdge edge, List<SnapTarget> targets, int threshold, int gap, bool inside, AppSettings settings)
         {
-            SnapScoreDiagnostics score = new SnapScoreDiagnostics(settings, "resize", desired, threshold);
+            SnapScoreDiagnostics score = new SnapScoreDiagnostics(settings, "resize-window", desired, threshold);
             foreach (SnapTarget target in targets)
             {
                 RECT r = target.Rect;
