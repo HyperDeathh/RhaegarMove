@@ -8,6 +8,8 @@ namespace RhaegarMove
         public int SnapThreshold = 16;
         public int MinWidth = 120;
         public int MinHeight = 80;
+        public int MaxWidth = 0;
+        public int MaxHeight = 0;
         public int WatchdogMs = 250;
         public bool EnableEdgeSnap = true;
         public bool EnableAeroSnap = true;
@@ -48,6 +50,8 @@ namespace RhaegarMove
             if (key.Equals("SnapThreshold", StringComparison.OrdinalIgnoreCase)) SnapThreshold = ToInt(value, SnapThreshold);
             else if (key.Equals("MinWidth", StringComparison.OrdinalIgnoreCase)) MinWidth = ToInt(value, MinWidth);
             else if (key.Equals("MinHeight", StringComparison.OrdinalIgnoreCase)) MinHeight = ToInt(value, MinHeight);
+            else if (key.Equals("MaxWidth", StringComparison.OrdinalIgnoreCase)) MaxWidth = ToInt(value, MaxWidth);
+            else if (key.Equals("MaxHeight", StringComparison.OrdinalIgnoreCase)) MaxHeight = ToInt(value, MaxHeight);
             else if (key.Equals("WatchdogMs", StringComparison.OrdinalIgnoreCase)) WatchdogMs = ToInt(value, WatchdogMs);
             else if (key.Equals("EnableEdgeSnap", StringComparison.OrdinalIgnoreCase)) EnableEdgeSnap = ToBool(value, EnableEdgeSnap);
             else if (key.Equals("EnableAeroSnap", StringComparison.OrdinalIgnoreCase)) EnableAeroSnap = ToBool(value, EnableAeroSnap);
@@ -70,6 +74,10 @@ namespace RhaegarMove
         {
             MinWidth = Math.Max(40, MinWidth);
             MinHeight = Math.Max(40, MinHeight);
+            MaxWidth = Math.Max(0, MaxWidth);
+            MaxHeight = Math.Max(0, MaxHeight);
+            if (MaxWidth > 0) MaxWidth = Math.Max(MinWidth, MaxWidth);
+            if (MaxHeight > 0) MaxHeight = Math.Max(MinHeight, MaxHeight);
             SnapThreshold = Math.Max(0, SnapThreshold);
             WatchdogMs = Math.Max(100, WatchdogMs);
             AeroThreshold = Math.Max(1, AeroThreshold);
