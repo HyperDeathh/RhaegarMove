@@ -42,6 +42,7 @@ namespace RhaegarMove
             b.AppendLine("AeroMaxSpeed=" + s.AeroMaxSpeed);
             b.AppendLine("AeroSpeedTau=" + s.AeroSpeedTau);
             b.AppendLine("RespectWindowMinMaxInfo=" + s.RespectWindowMinMaxInfo);
+            b.AppendLine("AllowCloakedWindows=" + s.AllowCloakedWindows);
             b.AppendLine("EnablePreviewOnlySnap=" + s.EnablePreviewOnlySnap);
             b.AppendLine("EnableTrayIcon=" + s.EnableTrayIcon);
             b.AppendLine();
@@ -66,7 +67,7 @@ namespace RhaegarMove
         {
             if (s.UnknownConfigKeys.Count > 0 || s.DuplicateConfigKeys.Count > 0 || s.NormalizationNotes.Count > 0)
                 return "config has unknown, duplicate, or normalized values";
-            if (s.StickyResize || s.EnablePreviewOverlay || s.EnablePreviewOnlySnap || s.EnableSnapDiagnostics || s.EnableRuleDiagnostics || s.EnableTrayIcon)
+            if (s.StickyResize || s.EnablePreviewOverlay || s.EnablePreviewOnlySnap || s.EnableSnapDiagnostics || s.EnableRuleDiagnostics || s.EnableTrayIcon || s.AllowCloakedWindows)
                 return "advanced diagnostics/features enabled";
             return "safe defaults or normal options";
         }
@@ -98,6 +99,11 @@ namespace RhaegarMove
             if (!s.RespectWindowMinMaxInfo)
             {
                 b.AppendLine("- Native window min/max constraints are disabled; some apps may resize past their own limits.");
+                any = true;
+            }
+            if (s.AllowCloakedWindows)
+            {
+                b.AppendLine("- Cloaked DWM windows are allowed; hidden UWP/virtual-desktop surfaces may become targets.");
                 any = true;
             }
             if (s.StickyResize)
