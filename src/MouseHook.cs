@@ -95,6 +95,14 @@ namespace RhaegarMove
             IntPtr target = WindowController.FindTargetWindow(pt, settings);
             if (target == IntPtr.Zero)
                 return false;
+
+            if (kind == OperationKind.Resize)
+            {
+                string cls = Geometry.ClassName(target);
+                if (!WindowRules.ShouldAllowResize(target, cls))
+                    return false;
+            }
+
             return worker.Begin(target, button, kind, pt);
         }
 
