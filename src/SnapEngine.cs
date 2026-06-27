@@ -258,24 +258,68 @@ namespace RhaegarMove
         private static List<SnapTarget> CollectTargets(IntPtr active, AppSettings settings)
         {
             List<SnapTarget> targets = new List<SnapTarget>();
+            SnapDiagnostics diagnostics = new SnapDiagnostics(settings);
             NativeMethods.EnumWindows(delegate(IntPtr hwnd, IntPtr lParam)
             {
-                if (hwnd == active || hwnd == IntPtr.Zero) return true;
-                if (!NativeMethods.IsWindowVisible(hwnd) || NativeMethods.IsIconic(hwnd)) return true;
+                if (hwnd == active)
+                {
+                    diagnostics.Reject(hwnd, "active window");
+                    return true;
+                }
+                if (hwnd == IntPtr.Zero)
+                {
+                    diagnostics.Reject(hwnd, "zero hwnd");
+                    return true;
+                }
+                if (!NativeMethods.IsWindowVisible(hwnd))
+                {
+                    diagnostics.Reject(hwnd, "not visible");
+                    return true;
+                }
+                if (NativeMethods.IsIconic(hwnd))
+                {
+                    diagnostics.Reject(hwnd, "minimized");
+                    return true;
+                }
+
                 string cls = Geometry.ClassName(hwnd);
-                if (WindowRules.ShouldIgnoreWindow(hwnd, cls)) return true;
-                if (!WindowRules.ShouldSnapToWindow(hwnd, cls)) return true;
+                if (WindowRules.ShouldIgnoreWindow(hwnd, cls))
+                {
+                    diagnostics.Reject(hwnd, "ignored rule " + WindowRules.ExplainWindow(hwnd, cls).Replace(Environment.NewLine, " | "));
+                    return true;
+                }
+                if (!WindowRules.ShouldSnapToWindow(hwnd, cls))
+                {
+                    diagnostics.Reject(hwnd, "not in SnapList");
+                    return true;
+                }
 
                 long style = NativeMethods.GetWindowLongPtrSafe(hwnd, NativeMethods.GWL_STYLE).ToInt64();
                 long exstyle = NativeMethods.GetWindowLongPtrSafe(hwnd, NativeMethods.GWL_EXSTYLE).ToInt64();
-                if ((exstyle & NativeMethods.WS_EX_NOACTIVATE) != 0) return true;
-                if ((style & NativeMethods.WS_CAPTION) == 0 && (style & NativeMethods.WS_THICKFRAME) == 0) return true;
+                if ((exstyle & NativeMethods.WS_EX_NOACTIVATE) != 0)
+                {
+                    diagnostics.Reject(hwnd, "noactivate");
+                    return true;
+                }
+                if ((style & NativeMethods.WS_CAPTION) == 0 && (style & NativeMethods.WS_THICKFRAME) == 0)
+                {
+                    diagnostics.Reject(hwnd, "no caption or thickframe");
+                    return true;
+                }
 
                 RECT rect;
                 if (Geometry.TryGetBestWindowRect(hwnd, out rect) && !rect.IsEmpty)
+                {
                     targets.Add(new SnapTarget { Hwnd = hwnd, Rect = rect });
+                    diagnostics.Accept(hwnd, "top-level window", rect);
+                }
+                else
+                {
+                    diagnostics.Reject(hwnd, "empty rect");
+                }
                 return true;
             }, IntPtr.Zero);
+            diagnostics.Flush();
             return targets;
         }
     }
