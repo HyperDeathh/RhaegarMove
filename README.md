@@ -1,55 +1,58 @@
 # RhaegarMove
 
-RhaegarMove is a small Windows utility for moving and resizing desktop windows with a modifier key.
+RhaegarMove is a small Windows utility for moving and resizing desktop windows with Alt + mouse drag.
 
 Default controls:
 
-- `Alt + Left Mouse Drag` moves the window under the cursor.
-- `Alt + Right Mouse Drag` resizes the window under the cursor.
+```text
+Alt + Left Mouse Drag  = move window
+Alt + Right Mouse Drag = resize window
+```
 
-## Current status
+## Status
 
-This is an early clean-room implementation. It is not AltSnap-level yet.
+RhaegarMove is a clean-room AltSnap-inspired implementation. It is feature-rich now, but it should still be treated as a cautious build until a real Windows build/test result is confirmed.
 
-Current v0.1 intentionally keeps the input model conservative:
+The input model is intentionally conservative:
 
 - Uses a low-level mouse hook.
-- Does not use a low-level keyboard hook yet.
-- Checks whether Alt is physically down when mouse events arrive.
-- Swallows only mouse events that belong to an active RhaegarMove operation.
+- Does not use a low-level keyboard hook.
 - Does not synthesize Alt/Ctrl keystrokes.
 - Does not try to hide from Task Manager.
+- Tray icon is disabled by default.
 
-The goal is to approach AltSnap-level quality step by step while keeping the implementation original and legally clean.
+## Files you actually need
 
-## Clean-room note
+For normal use, these are the important files:
 
-This project is written as a clean-room implementation. AltSnap is useful as a public reference for understanding the kinds of Windows edge cases a tool like this must consider, but this repository must not copy AltSnap source code.
+```text
+RhaegarMove.exe      main app, built into dist\
+RhaegarMove.ini      config
+install.bat          install to C:\Program Files\RhaegarMove and enable startup
+uninstall.bat        remove install/startup task
+stop.bat             emergency stop
+status.bat           quick status check
+settings.bat         open settings window without tray
+tools.bat            optional debug/tools menu
+```
 
-Design lessons applied here:
-
-- Keep global hooks minimal and fail-safe.
-- Always unhook on exit, cancel, or watchdog reset.
-- Never do heavy work inside low-level hook callbacks.
-- Use an explicit state machine instead of treating Alt as a simple boolean.
-- Swallow mouse events only while RhaegarMove owns an active operation.
-- Prefer safe cancellation over trying to be clever.
+Debug reports are no longer separate `.bat` files. Open `tools.bat` if you need diagnostics.
 
 ## Build
 
 Open a normal Command Prompt in the repository folder and run:
 
 ```bat
-build.bat
+verify_build.bat
 ```
 
-The output will be:
+It runs `build.bat` and verifies this file exists:
 
 ```text
 dist\RhaegarMove.exe
 ```
 
-The build script uses the .NET Framework C# compiler that is normally available on Windows:
+The normal build path uses the .NET Framework C# compiler usually available on Windows:
 
 ```text
 %WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe
@@ -57,14 +60,12 @@ The build script uses the .NET Framework C# compiler that is normally available 
 
 No MSYS2, MinGW, or Visual Studio install is required for the normal build path.
 
-Note: the current build script compiles from a temporary generated source file under `build\RhaegarMove.generated.cs`. This is temporary and exists only to keep the first public source buildable while the main source is being cleaned up.
-
-## Test first
+## Test before installing
 
 Before installing as startup, test locally:
 
 ```bat
-build.bat
+verify_build.bat
 run.bat
 ```
 
@@ -84,7 +85,7 @@ It copies the executable and config file to:
 C:\Program Files\RhaegarMove
 ```
 
-Then it creates a Windows Scheduled Task named `RhaegarMove` that starts on user logon with highest privileges.
+Then it creates a Windows Scheduled Task named `RhaegarMove` that starts on user logon.
 
 ## Uninstall
 
@@ -94,28 +95,35 @@ Run as administrator:
 uninstall.bat
 ```
 
-## Config
+## Settings
 
-The default config file is `RhaegarMove.ini`.
+Open the settings UI without tray:
 
-Important options:
+```bat
+settings.bat
+```
+
+Tray icon is disabled by default:
 
 ```ini
-SnapThreshold=16
-MinWidth=120
-MinHeight=80
-EnableEdgeSnap=true
-WatchdogMs=250
+EnableTrayIcon=false
 ```
+
+It can be enabled from config/settings if desired, but the default UX is trayless.
+
+## Diagnostics
+
+Use one entry point:
+
+```bat
+tools.bat
+```
+
+It contains status, reload, graceful exit, cursor diagnostics, config report, snap report, min/max report, and DPI snap report.
 
 ## Safety notes
 
-RhaegarMove touches low-level Windows input. Bugs in this kind of software can make input feel broken, so the code is intentionally conservative:
-
-- It does not synthesize Alt/Ctrl keystrokes.
-- It does not suppress Alt key-up by default.
-- It ends operations on Alt release, mouse release, or watchdog timeout.
-- It has no persistence tricks beyond the explicit Scheduled Task created by `install.bat`.
+RhaegarMove touches low-level Windows input. Bugs in this kind of software can make input feel broken, so the code is intentionally conservative.
 
 If anything feels wrong, run:
 
@@ -129,3 +137,7 @@ or from any administrator Command Prompt:
 taskkill /IM RhaegarMove.exe /F
 schtasks /Delete /TN "RhaegarMove" /F
 ```
+
+## Clean-room note
+
+This project is written as a clean-room implementation. It must not copy AltSnap source code or remove attribution from third-party code. The project can be inspired by the category of behavior, but implementation remains original.
