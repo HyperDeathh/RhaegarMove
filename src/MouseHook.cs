@@ -96,6 +96,9 @@ namespace RhaegarMove
             if (target == IntPtr.Zero)
                 return false;
 
+            if (settings.EnableRuleDiagnostics)
+                RuleDiagnostics.WriteSnapshot(kind.ToString(), target);
+
             if (kind == OperationKind.Resize)
             {
                 string cls = Geometry.ClassName(target);
