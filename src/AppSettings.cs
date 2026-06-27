@@ -15,6 +15,7 @@ namespace RhaegarMove
         public bool EnableEdgeSnap = true;
         public bool EnableAeroSnap = true;
         public int AeroThreshold = 8;
+        public bool AeroTopMaximizes = true;
         public int AutoSnap = 2;
         public int SnapGap = 0;
         public int ResizeCenterMode = 1;
@@ -89,6 +90,7 @@ namespace RhaegarMove
             EnableEdgeSnap = s.EnableEdgeSnap;
             EnableAeroSnap = s.EnableAeroSnap;
             AeroThreshold = s.AeroThreshold;
+            AeroTopMaximizes = s.AeroTopMaximizes;
             AutoSnap = s.AutoSnap;
             SnapGap = s.SnapGap;
             ResizeCenterMode = s.ResizeCenterMode;
@@ -128,6 +130,7 @@ namespace RhaegarMove
             else if (key.Equals("EnableEdgeSnap", StringComparison.OrdinalIgnoreCase)) EnableEdgeSnap = ToBool(key, value, EnableEdgeSnap);
             else if (key.Equals("EnableAeroSnap", StringComparison.OrdinalIgnoreCase)) EnableAeroSnap = ToBool(key, value, EnableAeroSnap);
             else if (key.Equals("AeroThreshold", StringComparison.OrdinalIgnoreCase)) AeroThreshold = ToInt(key, value, AeroThreshold);
+            else if (key.Equals("AeroTopMaximizes", StringComparison.OrdinalIgnoreCase)) AeroTopMaximizes = ToBool(key, value, AeroTopMaximizes);
             else if (key.Equals("AutoSnap", StringComparison.OrdinalIgnoreCase)) AutoSnap = ToInt(key, value, AutoSnap);
             else if (key.Equals("SnapGap", StringComparison.OrdinalIgnoreCase)) SnapGap = ToInt(key, value, SnapGap);
             else if (key.Equals("ResizeCenterMode", StringComparison.OrdinalIgnoreCase)) ResizeCenterMode = ToInt(key, value, ResizeCenterMode);
