@@ -7,6 +7,7 @@ namespace RhaegarMove
     {
         private sealed class SnapTarget
         {
+            public IntPtr Hwnd;
             public RECT Rect;
         }
 
@@ -23,7 +24,8 @@ namespace RhaegarMove
                 int flags;
                 if (TryGetAeroRect(pt, out aero, out flags, settings))
                 {
-                    WindowRestoreStore.Set(hwnd, Math.Max(settings.MinWidth, origin.Width), Math.Max(settings.MinHeight, origin.Height), flags);
+                    int dpi = DpiHelper.GetWindowDpi(hwnd);
+                    WindowRestoreStore.Set(hwnd, Math.Max(settings.MinWidth, origin.Width), Math.Max(settings.MinHeight, origin.Height), flags, dpi);
                     x = aero.left;
                     y = aero.top;
                     width = Math.Max(settings.MinWidth, aero.Width);
@@ -71,6 +73,54 @@ namespace RhaegarMove
             }
         }
 
+        public static void ApplyStickyResize(IntPtr active, RECT before, RECT after, ResizeEdge edge, AppSettings settings)
+        {
+            if (!settings.StickyResize)
+                return;
+
+            int dxLeft = after.left - before.left;
+            int dxRight = after.right - before.right;
+            int dyTop = after.top - before.top;
+            int dyBottom = after.bottom - before.bottom;
+            if (dxLeft == 0 && dxRight == 0 && dyTop == 0 && dyBottom == 0)
+                return;
+
+            int threshold = Math.Max(1, settings.SnapThreshold);
+            List<SnapTarget> targets = CollectTargets(active, settings);
+            foreach (SnapTarget target in targets)
+            {
+                RECT r = target.Rect;
+                bool changed = false;
+
+                if (edge.Right && Math.Abs(r.left - before.right) <= threshold && Geometry.RectsOverlapVertically(before, r, threshold))
+                {
+                    r.left += dxRight;
+                    changed = true;
+                }
+                if (edge.Left && Math.Abs(r.right - before.left) <= threshold && Geometry.RectsOverlapVertically(before, r, threshold))
+                {
+                    r.right += dxLeft;
+                    changed = true;
+                }
+                if (edge.Bottom && Math.Abs(r.top - before.bottom) <= threshold && Geometry.RectsOverlapHorizontally(before, r, threshold))
+                {
+                    r.top += dyBottom;
+                    changed = true;
+                }
+                if (edge.Top && Math.Abs(r.bottom - before.top) <= threshold && Geometry.RectsOverlapHorizontally(before, r, threshold))
+                {
+                    r.bottom += dyTop;
+                    changed = true;
+                }
+
+                if (changed && r.Width >= settings.MinWidth && r.Height >= settings.MinHeight)
+                {
+                    NativeMethods.SetWindowPos(target.Hwnd, IntPtr.Zero, r.left, r.top, r.Width, r.Height,
+                        NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
+                }
+            }
+        }
+
         private static bool TryGetAeroRect(POINT pt, out RECT rect, out int flags, AppSettings settings)
         {
             rect = new RECT();
@@ -88,49 +138,13 @@ namespace RhaegarMove
             int midX = work.left + work.Width / 2;
             int midY = work.top + work.Height / 2;
 
-            if (nearLeft && nearTop)
-            {
-                rect = new RECT(work.left, work.top, midX, midY);
-                flags = RestoreFlags.Snapped | RestoreFlags.Left | RestoreFlags.Top;
-                return true;
-            }
-            if (nearLeft && nearBottom)
-            {
-                rect = new RECT(work.left, midY, midX, work.bottom);
-                flags = RestoreFlags.Snapped | RestoreFlags.Left | RestoreFlags.Bottom;
-                return true;
-            }
-            if (nearRight && nearTop)
-            {
-                rect = new RECT(midX, work.top, work.right, midY);
-                flags = RestoreFlags.Snapped | RestoreFlags.Right | RestoreFlags.Top;
-                return true;
-            }
-            if (nearRight && nearBottom)
-            {
-                rect = new RECT(midX, midY, work.right, work.bottom);
-                flags = RestoreFlags.Snapped | RestoreFlags.Right | RestoreFlags.Bottom;
-                return true;
-            }
-            if (nearTop)
-            {
-                rect = new RECT(work.left, work.top, work.right, work.bottom);
-                flags = RestoreFlags.Snapped | RestoreFlags.Maximized;
-                return true;
-            }
-            if (nearLeft)
-            {
-                rect = new RECT(work.left, work.top, midX, work.bottom);
-                flags = RestoreFlags.Snapped | RestoreFlags.Left;
-                return true;
-            }
-            if (nearRight)
-            {
-                rect = new RECT(midX, work.top, work.right, work.bottom);
-                flags = RestoreFlags.Snapped | RestoreFlags.Right;
-                return true;
-            }
-
+            if (nearLeft && nearTop) { rect = new RECT(work.left, work.top, midX, midY); flags = RestoreFlags.Snapped | RestoreFlags.Left | RestoreFlags.Top; return true; }
+            if (nearLeft && nearBottom) { rect = new RECT(work.left, midY, midX, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Left | RestoreFlags.Bottom; return true; }
+            if (nearRight && nearTop) { rect = new RECT(midX, work.top, work.right, midY); flags = RestoreFlags.Snapped | RestoreFlags.Right | RestoreFlags.Top; return true; }
+            if (nearRight && nearBottom) { rect = new RECT(midX, midY, work.right, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Right | RestoreFlags.Bottom; return true; }
+            if (nearTop) { rect = new RECT(work.left, work.top, work.right, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Maximized; return true; }
+            if (nearLeft) { rect = new RECT(work.left, work.top, midX, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Left; return true; }
+            if (nearRight) { rect = new RECT(midX, work.top, work.right, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Right; return true; }
             return false;
         }
 
@@ -185,7 +199,6 @@ namespace RhaegarMove
                         Consider(r.right - gap - desired.right, ref bestDx, ref bestAbsX, threshold);
                     }
                 }
-
                 if (Geometry.RectsOverlapHorizontally(desired, r, threshold))
                 {
                     Consider(r.bottom + gap - desired.top, ref bestDy, ref bestAbsY, threshold);
@@ -247,23 +260,20 @@ namespace RhaegarMove
             List<SnapTarget> targets = new List<SnapTarget>();
             NativeMethods.EnumWindows(delegate(IntPtr hwnd, IntPtr lParam)
             {
-                if (hwnd == active || hwnd == IntPtr.Zero)
-                    return true;
-                if (!NativeMethods.IsWindowVisible(hwnd) || NativeMethods.IsIconic(hwnd))
-                    return true;
-                if (WindowRules.ShouldIgnoreWindow(hwnd, Geometry.ClassName(hwnd)))
-                    return true;
+                if (hwnd == active || hwnd == IntPtr.Zero) return true;
+                if (!NativeMethods.IsWindowVisible(hwnd) || NativeMethods.IsIconic(hwnd)) return true;
+                string cls = Geometry.ClassName(hwnd);
+                if (WindowRules.ShouldIgnoreWindow(hwnd, cls)) return true;
+                if (!WindowRules.ShouldSnapToWindow(hwnd, cls)) return true;
 
                 long style = NativeMethods.GetWindowLongPtrSafe(hwnd, NativeMethods.GWL_STYLE).ToInt64();
                 long exstyle = NativeMethods.GetWindowLongPtrSafe(hwnd, NativeMethods.GWL_EXSTYLE).ToInt64();
-                if ((exstyle & NativeMethods.WS_EX_NOACTIVATE) != 0)
-                    return true;
-                if ((style & NativeMethods.WS_CAPTION) == 0 && (style & NativeMethods.WS_THICKFRAME) == 0)
-                    return true;
+                if ((exstyle & NativeMethods.WS_EX_NOACTIVATE) != 0) return true;
+                if ((style & NativeMethods.WS_CAPTION) == 0 && (style & NativeMethods.WS_THICKFRAME) == 0) return true;
 
                 RECT rect;
                 if (Geometry.TryGetBestWindowRect(hwnd, out rect) && !rect.IsEmpty)
-                    targets.Add(new SnapTarget { Rect = rect });
+                    targets.Add(new SnapTarget { Hwnd = hwnd, Rect = rect });
                 return true;
             }, IntPtr.Zero);
             return targets;
