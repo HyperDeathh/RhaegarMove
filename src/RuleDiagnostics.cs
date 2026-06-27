@@ -11,7 +11,6 @@ namespace RhaegarMove
                 return "hwnd=0";
 
             string cls = Geometry.ClassName(hwnd);
-            string title = Geometry.WindowTitle(hwnd);
             bool ignored = WindowRules.ShouldIgnoreWindow(hwnd, cls);
             bool snapTarget = WindowRules.ShouldSnapToWindow(hwnd, cls);
             bool sendsSizing = WindowRules.ShouldSendSizingNotifications(hwnd, cls);
@@ -19,12 +18,11 @@ namespace RhaegarMove
 
             return
                 "hwnd=" + hwnd.ToInt64().ToString("X") + Environment.NewLine +
-                "class=" + cls + Environment.NewLine +
-                "title=" + title + Environment.NewLine +
                 "ignored=" + ignored + Environment.NewLine +
                 "snapTarget=" + snapTarget + Environment.NewLine +
                 "sendsSizingNotifications=" + sendsSizing + Environment.NewLine +
-                "canResize=" + canResize + Environment.NewLine;
+                "canResize=" + canResize + Environment.NewLine +
+                WindowRules.ExplainWindow(hwnd, cls);
         }
 
         public static void WriteSnapshot(string reason, IntPtr hwnd)
