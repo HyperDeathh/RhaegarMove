@@ -14,31 +14,44 @@ namespace RhaegarMove
         [STAThread]
         private static void Main(string[] args)
         {
-            if (RuntimeCommands.TryHandle(args))
-                return;
-
-            bool created;
-            singleInstance = new System.Threading.Mutex(true, "Local\\RhaegarMove", out created);
-            if (!created)
-                return;
-
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-
-            settings = AppSettings.Load();
-            ConfigValidation.WriteReport(settings, "startup");
-            PreviewOverlay.Initialize();
-            worker = new OperationWorker(settings);
-            mouseHook = new MouseHook(settings, worker);
-
             try
             {
-                mouseHook.Install();
-                appLoop = new AppLoop(worker, settings);
-                Application.Run(appLoop);
+                if (RuntimeCommands.TryHandle(args))
+                    return;
+
+                bool created;
+                singleInstance = new System.Threading.Mutex(true, "Local\\RhaegarMove", out created);
+                if (!created)
+                {
+                    RuntimeControl.WriteRuntime("start ignored: another RhaegarMove instance is already running");
+                    return;
+                }
+
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+
+                RuntimeControl.WriteRuntime("starting " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                settings = AppSettings.Load();
+                ConfigValidation.WriteReport(settings, "startup");
+                PreviewOverlay.Initialize();
+                worker = new OperationWorker(settings);
+                mouseHook = new MouseHook(settings, worker);
+
+                try
+                {
+                    mouseHook.Install();
+                    appLoop = new AppLoop(worker, settings);
+                    RuntimeControl.WriteRuntime("running " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                    Application.Run(appLoop);
+                }
+                finally
+                {
+                    Cleanup();
+                }
             }
-            finally
+            catch (Exception ex)
             {
+                RuntimeControl.WriteRuntime("fatal startup error: " + ex.GetType().Name + " " + ex.Message);
                 Cleanup();
             }
         }
