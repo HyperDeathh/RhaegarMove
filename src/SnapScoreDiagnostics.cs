@@ -13,11 +13,28 @@ namespace RhaegarMove
         private int bestAbs = int.MaxValue;
         private int bestDelta;
 
+        public static void BeginSession(AppSettings settings, string reason)
+        {
+            if (!settings.EnableSnapDiagnostics)
+                return;
+            try
+            {
+                Directory.CreateDirectory(RuntimeControl.ControlDir);
+                File.WriteAllText(Path.Combine(RuntimeControl.ControlDir, "snap-score.txt"),
+                    "session=" + reason + Environment.NewLine +
+                    "time=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine + Environment.NewLine);
+            }
+            catch
+            {
+            }
+        }
+
         public SnapScoreDiagnostics(AppSettings settings, string kind, RECT desired, int threshold)
         {
             this.settings = settings;
             if (settings.EnableSnapDiagnostics)
             {
+                builder.AppendLine("---");
                 builder.AppendLine("time=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 builder.AppendLine("kind=" + kind);
                 builder.AppendLine("threshold=" + threshold);
@@ -52,8 +69,9 @@ namespace RhaegarMove
                 builder.AppendLine("bestLabel=" + bestLabel);
                 builder.AppendLine("bestDelta=" + bestDelta);
                 builder.AppendLine("bestAbs=" + (bestAbs == int.MaxValue ? -1 : bestAbs));
+                builder.AppendLine();
                 Directory.CreateDirectory(RuntimeControl.ControlDir);
-                File.WriteAllText(Path.Combine(RuntimeControl.ControlDir, "snap-score.txt"), builder.ToString());
+                File.AppendAllText(Path.Combine(RuntimeControl.ControlDir, "snap-score.txt"), builder.ToString());
             }
             catch
             {
