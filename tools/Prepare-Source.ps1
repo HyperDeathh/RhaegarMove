@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$nl = [Environment]::NewLine
 
 $source = [System.IO.File]::ReadAllText($InputPath)
 
@@ -161,12 +162,24 @@ $newMove = @'
 $source = $source.Replace($oldMove, $newMove)
 
 # Phase 3 settings.
-$source = $source.Replace('public bool EnableEdgeSnap = true;', 'public bool EnableEdgeSnap = true;`r`n            public bool EnableAeroSnap = true;`r`n            public int AeroThreshold = 8;')
-$source = $source.Replace('else if (key.Equals("EnableEdgeSnap", StringComparison.OrdinalIgnoreCase)) s.EnableEdgeSnap = ToBool(value, s.EnableEdgeSnap);', 'else if (key.Equals("EnableEdgeSnap", StringComparison.OrdinalIgnoreCase)) s.EnableEdgeSnap = ToBool(value, s.EnableEdgeSnap);`r`n                    else if (key.Equals("EnableAeroSnap", StringComparison.OrdinalIgnoreCase)) s.EnableAeroSnap = ToBool(value, s.EnableAeroSnap);`r`n                    else if (key.Equals("AeroThreshold", StringComparison.OrdinalIgnoreCase)) s.AeroThreshold = ToInt(value, s.AeroThreshold);')
-$source = $source.Replace('s.WatchdogMs = Math.Max(100, s.WatchdogMs);', 's.WatchdogMs = Math.Max(100, s.WatchdogMs);`r`n                s.AeroThreshold = Math.Max(1, s.AeroThreshold);')
+$source = $source.Replace(
+    'public bool EnableEdgeSnap = true;',
+    'public bool EnableEdgeSnap = true;' + $nl + '            public bool EnableAeroSnap = true;' + $nl + '            public int AeroThreshold = 8;'
+)
+$source = $source.Replace(
+    'else if (key.Equals("EnableEdgeSnap", StringComparison.OrdinalIgnoreCase)) s.EnableEdgeSnap = ToBool(value, s.EnableEdgeSnap);',
+    'else if (key.Equals("EnableEdgeSnap", StringComparison.OrdinalIgnoreCase)) s.EnableEdgeSnap = ToBool(value, s.EnableEdgeSnap);' + $nl + '                    else if (key.Equals("EnableAeroSnap", StringComparison.OrdinalIgnoreCase)) s.EnableAeroSnap = ToBool(value, s.EnableAeroSnap);' + $nl + '                    else if (key.Equals("AeroThreshold", StringComparison.OrdinalIgnoreCase)) s.AeroThreshold = ToInt(value, s.AeroThreshold);'
+)
+$source = $source.Replace(
+    's.WatchdogMs = Math.Max(100, s.WatchdogMs);',
+    's.WatchdogMs = Math.Max(100, s.WatchdogMs);' + $nl + '                s.AeroThreshold = Math.Max(1, s.AeroThreshold);'
+)
 
 # Phase 2 native import.
-$source = $source.Replace('[DllImport("user32.dll")] private static extern IntPtr MonitorFromPoint(POINT pt, uint flags);', '[DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out RECT rect, int size);`r`n        [DllImport("user32.dll")] private static extern IntPtr MonitorFromPoint(POINT pt, uint flags);')
+$source = $source.Replace(
+    '[DllImport("user32.dll")] private static extern IntPtr MonitorFromPoint(POINT pt, uint flags);',
+    '[DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out RECT rect, int size);' + $nl + '        [DllImport("user32.dll")] private static extern IntPtr MonitorFromPoint(POINT pt, uint flags);'
+)
 
 $encoding = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($OutputPath, $source, $encoding)
