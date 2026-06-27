@@ -17,12 +17,16 @@ namespace RhaegarMove
                 bool hasWork = Geometry.TryGetMonitorWorkArea(point, out work);
                 RestoreData restore;
                 bool hasRestore = WindowRestoreStore.TryGet(hwnd, out restore);
+                int windowDpi = DpiHelper.GetWindowDpi(hwnd);
+                int monitorDpi = DpiHelper.GetMonitorDpi(point);
 
                 StringBuilder b = new StringBuilder();
                 b.AppendLine("time=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 b.AppendLine("kind=" + kind);
                 b.AppendLine("hwnd=" + hwnd);
-                b.AppendLine("windowDpi=" + DpiHelper.GetWindowDpi(hwnd));
+                b.AppendLine("windowDpi=" + windowDpi);
+                b.AppendLine("monitorDpi=" + monitorDpi);
+                b.AppendLine("dpiDelta=" + (windowDpi - monitorDpi));
                 b.AppendLine("point=" + point.x + "," + point.y);
                 b.AppendLine("hasWorkArea=" + hasWork);
                 if (hasWork) b.AppendLine("workArea=" + FormatRect(work));
@@ -34,6 +38,7 @@ namespace RhaegarMove
                     b.AppendLine("restoreSize=" + restore.Width + "x" + restore.Height);
                     b.AppendLine("restoreDpi=" + restore.Dpi);
                     b.AppendLine("restoreFlags=" + restore.Flags);
+                    b.AppendLine("restoreToMonitorScaleX1000=" + ScaleX1000(restore.Dpi, monitorDpi));
                 }
                 b.AppendLine("---");
                 File.AppendAllText(Path.Combine(RuntimeControl.ControlDir, "dpi-snap.txt"), b.ToString());
@@ -41,6 +46,13 @@ namespace RhaegarMove
             catch
             {
             }
+        }
+
+        private static int ScaleX1000(int fromDpi, int toDpi)
+        {
+            if (fromDpi <= 0 || toDpi <= 0)
+                return 1000;
+            return (int)((long)toDpi * 1000L / fromDpi);
         }
 
         private static string FormatRect(RECT r)
