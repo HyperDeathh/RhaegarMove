@@ -15,6 +15,7 @@ namespace RhaegarMove
         private TextBox snapList;
         private TextBox noSizingNotify;
         private TextBox noResize;
+        private TextBox noMinMaxInfo;
         private Label validationLabel;
 
         public RuleListForm(Action afterSave)
@@ -22,7 +23,7 @@ namespace RhaegarMove
             this.afterSave = afterSave;
             Text = "RhaegarMove Window Rules";
             StartPosition = FormStartPosition.CenterScreen;
-            Size = new Size(720, 720);
+            Size = new Size(720, 760);
             MinimizeBox = false;
             MaximizeBox = false;
             BuildUi();
@@ -35,7 +36,7 @@ namespace RhaegarMove
             TableLayoutPanel root = new TableLayoutPanel();
             root.Dock = DockStyle.Fill;
             root.ColumnCount = 1;
-            root.RowCount = 12;
+            root.RowCount = 13;
             root.Padding = new Padding(12);
             root.AutoScroll = true;
             Controls.Add(root);
@@ -47,6 +48,7 @@ namespace RhaegarMove
             snapList = AddBox(root, "SnapList  allow-list, empty means all eligible windows");
             noSizingNotify = AddBox(root, "NoSizingNotify  example: app.exe:*|*");
             noResize = AddBox(root, "NoResize  example: app.exe:*|*");
+            noMinMaxInfo = AddBox(root, "NoMinMaxInfo  example: app.exe:*|*");
 
             Label note = new Label();
             note.Text = "Comma-separated wildcard patterns. Keep shell/taskbar/start menu rules unless you know why you are changing them.";
@@ -103,6 +105,7 @@ namespace RhaegarMove
             snapList.Text = Get(values, "SnapList");
             noSizingNotify.Text = Get(values, "NoSizingNotify");
             noResize.Text = Get(values, "NoResize");
+            noMinMaxInfo.Text = Get(values, "NoMinMaxInfo");
         }
 
         private static string Get(Dictionary<string, string> values, string key)
@@ -153,6 +156,7 @@ namespace RhaegarMove
             values["SnapList"] = Normalize(snapList.Text);
             values["NoSizingNotify"] = Normalize(noSizingNotify.Text);
             values["NoResize"] = Normalize(noResize.Text);
+            values["NoMinMaxInfo"] = Normalize(noMinMaxInfo.Text);
             return values;
         }
 
