@@ -20,7 +20,7 @@ namespace RhaegarMove
             }
             if (command == "--config-path" || command == "/config-path")
             {
-                Console.WriteLine(GetConfigPath());
+                WriteRuntimeFile(GetConfigPath());
                 return true;
             }
             if (command == "--diagnose-cursor" || command == "/diagnose-cursor")
@@ -30,7 +30,7 @@ namespace RhaegarMove
             }
             if (command == "--preview-status" || command == "/preview-status")
             {
-                Console.WriteLine(SnapPreview.DescribeLast());
+                WriteRuntimeFile(SnapPreview.DescribeLast());
                 return true;
             }
             return false;
@@ -39,10 +39,13 @@ namespace RhaegarMove
         private static void WriteStatus()
         {
             bool running = Process.GetProcessesByName("RhaegarMove").Length > 0;
-            Console.WriteLine("RhaegarMove running=" + running);
-            Console.WriteLine("config=" + GetConfigPath());
-            Console.WriteLine("rules=" + Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RhaegarMove", "rules.txt"));
-            Console.WriteLine("preview=" + Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RhaegarMove", "preview.txt"));
+            string local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RhaegarMove");
+            string text =
+                "RhaegarMove running=" + running + Environment.NewLine +
+                "config=" + GetConfigPath() + Environment.NewLine +
+                "rules=" + Path.Combine(local, "rules.txt") + Environment.NewLine +
+                "preview=" + Path.Combine(local, "preview.txt") + Environment.NewLine;
+            WriteRuntimeFile(text);
         }
 
         private static string GetConfigPath()
@@ -57,8 +60,21 @@ namespace RhaegarMove
             IntPtr hwnd = NativeMethods.WindowFromPoint(pt);
             hwnd = hwnd == IntPtr.Zero ? IntPtr.Zero : NativeMethods.GetAncestor(hwnd, NativeMethods.GA_ROOT);
             string text = RuleDiagnostics.DescribeWindow(hwnd);
-            Console.WriteLine(text);
             RuleDiagnostics.WriteSnapshot("diagnose-cursor", hwnd);
+            WriteRuntimeFile(text);
+        }
+
+        private static void WriteRuntimeFile(string text)
+        {
+            try
+            {
+                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RhaegarMove");
+                Directory.CreateDirectory(dir);
+                File.WriteAllText(Path.Combine(dir, "runtime.txt"), text ?? string.Empty);
+            }
+            catch
+            {
+            }
         }
     }
 }
