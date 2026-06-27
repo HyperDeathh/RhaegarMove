@@ -1,0 +1,33 @@
+# Build outputs
+dist/
+build/
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.obj
+*.o
+*.a
+*.lib
+*.res
+
+# Archives
+*.zip
+*.7z
+*.rar
+
+# IDE/editor
+.vscode/
+.idea/
+*.user
+*.suo
+*.csproj.user
+
+# Logs
+*.log
+
+# Windows junk
+Thumbs.db
+Desktop.ini
