@@ -105,6 +105,7 @@ namespace RhaegarMove
                 ConfigValidation.WriteReport(settings, "reload");
                 watchdog.Interval = Math.Max(100, settings.WatchdogMs);
                 trayIcon.RefreshSettings(settings);
+                RuntimeControl.MarkReloadApplied("runtime reload");
                 RuntimeControl.WriteRuntime("reload applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
             }
 
