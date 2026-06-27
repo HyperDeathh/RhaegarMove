@@ -20,6 +20,7 @@ namespace RhaegarMove
         public int AeroMaxSpeed = 65535;
         public int AeroSpeedTau = 64;
         public bool SnapToWindows = true;
+        public bool StickyResize = false;
         public bool AllowFullScreenWindows = false;
         public bool SkipMaximizedWindows = false;
         public bool NotifyMoveSizeEvents = true;
@@ -59,6 +60,7 @@ namespace RhaegarMove
             else if (key.Equals("AeroMaxSpeed", StringComparison.OrdinalIgnoreCase)) AeroMaxSpeed = ToInt(value, AeroMaxSpeed);
             else if (key.Equals("AeroSpeedTau", StringComparison.OrdinalIgnoreCase)) AeroSpeedTau = ToInt(value, AeroSpeedTau);
             else if (key.Equals("SnapToWindows", StringComparison.OrdinalIgnoreCase)) SnapToWindows = ToBool(value, SnapToWindows);
+            else if (key.Equals("StickyResize", StringComparison.OrdinalIgnoreCase)) StickyResize = ToBool(value, StickyResize);
             else if (key.Equals("AllowFullScreenWindows", StringComparison.OrdinalIgnoreCase)) AllowFullScreenWindows = ToBool(value, AllowFullScreenWindows);
             else if (key.Equals("SkipMaximizedWindows", StringComparison.OrdinalIgnoreCase)) SkipMaximizedWindows = ToBool(value, SkipMaximizedWindows);
             else if (key.Equals("NotifyMoveSizeEvents", StringComparison.OrdinalIgnoreCase)) NotifyMoveSizeEvents = ToBool(value, NotifyMoveSizeEvents);
