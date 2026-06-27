@@ -6,8 +6,21 @@ Default controls:
 
 - `Alt + Left Mouse Drag` moves the window under the cursor.
 - `Alt + Right Mouse Drag` resizes the window under the cursor.
-- `Esc` cancels the current drag/resize state.
-- `Ctrl + Alt + Backspace` exits RhaegarMove immediately as an emergency stop.
+
+## Current status
+
+This is an early clean-room implementation. It is not AltSnap-level yet.
+
+Current v0.1 intentionally keeps the input model conservative:
+
+- Uses a low-level mouse hook.
+- Does not use a low-level keyboard hook yet.
+- Checks whether Alt is physically down when mouse events arrive.
+- Swallows only mouse events that belong to an active RhaegarMove operation.
+- Does not synthesize Alt/Ctrl keystrokes.
+- Does not try to hide from Task Manager.
+
+The goal is to approach AltSnap-level quality step by step while keeping the implementation original and legally clean.
 
 ## Clean-room note
 
@@ -16,7 +29,6 @@ This project is written as a clean-room implementation. AltSnap is useful as a p
 Design lessons applied here:
 
 - Keep global hooks minimal and fail-safe.
-- Install the mouse hook only while the hotkey is active.
 - Always unhook on exit, cancel, or watchdog reset.
 - Never do heavy work inside low-level hook callbacks.
 - Use an explicit state machine instead of treating Alt as a simple boolean.
@@ -44,6 +56,19 @@ The build script uses the .NET Framework C# compiler that is normally available 
 ```
 
 No MSYS2, MinGW, or Visual Studio install is required for the normal build path.
+
+Note: the current build script compiles from a temporary generated source file under `build\RhaegarMove.generated.cs`. This is temporary and exists only to keep the first public source buildable while the main source is being cleaned up.
+
+## Test first
+
+Before installing as startup, test locally:
+
+```bat
+build.bat
+run.bat
+```
+
+Use Notepad for the first test.
 
 ## Install
 
@@ -80,16 +105,17 @@ SnapThreshold=16
 MinWidth=120
 MinHeight=80
 EnableEdgeSnap=true
+WatchdogMs=250
 ```
 
 ## Safety notes
 
-RhaegarMove uses global keyboard and mouse hooks. Bugs in this kind of software can make input feel broken, so the code is intentionally conservative:
+RhaegarMove touches low-level Windows input. Bugs in this kind of software can make input feel broken, so the code is intentionally conservative:
 
 - It does not synthesize Alt/Ctrl keystrokes.
 - It does not suppress Alt key-up by default.
-- It ends operations on Alt release, mouse release, Escape, or watchdog timeout.
-- It keeps the mouse hook active only while needed.
+- It ends operations on Alt release, mouse release, or watchdog timeout.
+- It has no persistence tricks beyond the explicit Scheduled Task created by `install.bat`.
 
 If anything feels wrong, run:
 
