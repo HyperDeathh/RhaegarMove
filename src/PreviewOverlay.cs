@@ -25,16 +25,51 @@ namespace RhaegarMove
             hideTimer.Tick += delegate { HideOverlay(); };
         }
 
+        public static void Initialize()
+        {
+            if (current == null || current.IsDisposed)
+            {
+                current = new PreviewOverlay();
+                current.CreateControl();
+            }
+        }
+
         public static void ShowRect(RECT rect, AppSettings settings)
         {
             if (!settings.EnablePreviewOverlay)
                 return;
             if (rect.Width <= 0 || rect.Height <= 0)
                 return;
-
             if (current == null || current.IsDisposed)
-                current = new PreviewOverlay();
+                return;
 
+            if (current.InvokeRequired)
+            {
+                current.BeginInvoke(new Action(delegate { ShowRectOnUi(rect); }));
+                return;
+            }
+
+            ShowRectOnUi(rect);
+        }
+
+        public static void HideOverlay()
+        {
+            if (current == null || current.IsDisposed)
+                return;
+
+            if (current.InvokeRequired)
+            {
+                current.BeginInvoke(new Action(HideOverlayOnUi));
+                return;
+            }
+
+            HideOverlayOnUi();
+        }
+
+        private static void ShowRectOnUi(RECT rect)
+        {
+            if (current == null || current.IsDisposed)
+                return;
             current.Bounds = new Rectangle(rect.left, rect.top, rect.Width, rect.Height);
             if (!current.Visible)
                 current.Show();
@@ -43,7 +78,7 @@ namespace RhaegarMove
             current.Invalidate();
         }
 
-        public static void HideOverlay()
+        private static void HideOverlayOnUi()
         {
             if (current == null || current.IsDisposed)
                 return;
