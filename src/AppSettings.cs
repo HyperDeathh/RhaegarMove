@@ -26,6 +26,7 @@ namespace RhaegarMove
         public bool SnapToWindows = true;
         public bool StickyResize = false;
         public bool RespectWindowMinMaxInfo = true;
+        public bool AllowCloakedWindows = false;
         public bool EnableRuleDiagnostics = false;
         public bool EnableSnapDiagnostics = false;
         public bool EnablePreviewState = false;
@@ -101,6 +102,7 @@ namespace RhaegarMove
             SnapToWindows = s.SnapToWindows;
             StickyResize = s.StickyResize;
             RespectWindowMinMaxInfo = s.RespectWindowMinMaxInfo;
+            AllowCloakedWindows = s.AllowCloakedWindows;
             EnableRuleDiagnostics = s.EnableRuleDiagnostics;
             EnableSnapDiagnostics = s.EnableSnapDiagnostics;
             EnablePreviewState = s.EnablePreviewState;
@@ -141,6 +143,7 @@ namespace RhaegarMove
             else if (key.Equals("SnapToWindows", StringComparison.OrdinalIgnoreCase)) SnapToWindows = ToBool(key, value, SnapToWindows);
             else if (key.Equals("StickyResize", StringComparison.OrdinalIgnoreCase)) StickyResize = ToBool(key, value, StickyResize);
             else if (key.Equals("RespectWindowMinMaxInfo", StringComparison.OrdinalIgnoreCase)) RespectWindowMinMaxInfo = ToBool(key, value, RespectWindowMinMaxInfo);
+            else if (key.Equals("AllowCloakedWindows", StringComparison.OrdinalIgnoreCase)) AllowCloakedWindows = ToBool(key, value, AllowCloakedWindows);
             else if (key.Equals("EnableRuleDiagnostics", StringComparison.OrdinalIgnoreCase)) EnableRuleDiagnostics = ToBool(key, value, EnableRuleDiagnostics);
             else if (key.Equals("EnableSnapDiagnostics", StringComparison.OrdinalIgnoreCase)) EnableSnapDiagnostics = ToBool(key, value, EnableSnapDiagnostics);
             else if (key.Equals("EnablePreviewState", StringComparison.OrdinalIgnoreCase)) EnablePreviewState = ToBool(key, value, EnablePreviewState);
