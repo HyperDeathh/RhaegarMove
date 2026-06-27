@@ -24,6 +24,7 @@ namespace RhaegarMove
         public bool SnapToWindows = true;
         public bool StickyResize = false;
         public bool EnableRuleDiagnostics = false;
+        public bool EnableSnapDiagnostics = false;
         public bool EnablePreviewState = false;
         public bool EnablePreviewOverlay = false;
         public bool AllowFullScreenWindows = false;
@@ -75,6 +76,7 @@ namespace RhaegarMove
             SnapToWindows = s.SnapToWindows;
             StickyResize = s.StickyResize;
             EnableRuleDiagnostics = s.EnableRuleDiagnostics;
+            EnableSnapDiagnostics = s.EnableSnapDiagnostics;
             EnablePreviewState = s.EnablePreviewState;
             EnablePreviewOverlay = s.EnablePreviewOverlay;
             AllowFullScreenWindows = s.AllowFullScreenWindows;
@@ -103,6 +105,7 @@ namespace RhaegarMove
             else if (key.Equals("SnapToWindows", StringComparison.OrdinalIgnoreCase)) SnapToWindows = ToBool(value, SnapToWindows);
             else if (key.Equals("StickyResize", StringComparison.OrdinalIgnoreCase)) StickyResize = ToBool(value, StickyResize);
             else if (key.Equals("EnableRuleDiagnostics", StringComparison.OrdinalIgnoreCase)) EnableRuleDiagnostics = ToBool(value, EnableRuleDiagnostics);
+            else if (key.Equals("EnableSnapDiagnostics", StringComparison.OrdinalIgnoreCase)) EnableSnapDiagnostics = ToBool(value, EnableSnapDiagnostics);
             else if (key.Equals("EnablePreviewState", StringComparison.OrdinalIgnoreCase)) EnablePreviewState = ToBool(value, EnablePreviewState);
             else if (key.Equals("EnablePreviewOverlay", StringComparison.OrdinalIgnoreCase)) EnablePreviewOverlay = ToBool(value, EnablePreviewOverlay);
             else if (key.Equals("AllowFullScreenWindows", StringComparison.OrdinalIgnoreCase)) AllowFullScreenWindows = ToBool(value, AllowFullScreenWindows);
