@@ -30,6 +30,7 @@ jobs:
             stop.bat
             status.bat
             open_config.bat
+            settings.bat
             diagnose_cursor.bat
             preview_status.bat
             reload.bat
