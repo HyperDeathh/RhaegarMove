@@ -67,8 +67,15 @@ namespace RhaegarMove
             if (!Geometry.TryGetBestWindowRect(hwnd, out restored))
                 return;
 
-            int width = hasRestore ? data.Width : restored.Width;
-            int height = hasRestore ? data.Height : restored.Height;
+            int width = restored.Width;
+            int height = restored.Height;
+            if (hasRestore)
+            {
+                int currentDpi = DpiHelper.GetWindowDpi(hwnd);
+                width = DpiHelper.Scale(data.Width, data.Dpi, currentDpi);
+                height = DpiHelper.Scale(data.Height, data.Dpi, currentDpi);
+            }
+
             width = Math.Max(settings.MinWidth, width);
             height = Math.Max(settings.MinHeight, height);
 
@@ -81,6 +88,9 @@ namespace RhaegarMove
 
         public static void NotifySizeMove(IntPtr hwnd, bool start, AppSettings settings)
         {
+            if (!WindowRules.ShouldSendSizingNotifications(hwnd, Geometry.ClassName(hwnd)))
+                return;
+
             NativeMethods.PostMessage(hwnd, start ? NativeMethods.WM_ENTERSIZEMOVE : NativeMethods.WM_EXITSIZEMOVE, IntPtr.Zero, IntPtr.Zero);
             if (settings.NotifyMoveSizeEvents)
             {
