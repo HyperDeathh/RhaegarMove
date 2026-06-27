@@ -18,6 +18,9 @@ namespace RhaegarMove
             if (!NativeMethods.IsWindowVisible(hwnd) || NativeMethods.IsIconic(hwnd))
                 return IntPtr.Zero;
 
+            if (!settings.AllowCloakedWindows && Geometry.IsDwmCloaked(hwnd))
+                return IntPtr.Zero;
+
             IntPtr stylePtr = NativeMethods.GetWindowLongPtrSafe(hwnd, NativeMethods.GWL_STYLE);
             long style = stylePtr.ToInt64();
             if ((style & NativeMethods.WS_CHILD) != 0 || (style & NativeMethods.WS_DISABLED) != 0)
