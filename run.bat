@@ -3,6 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 if not exist "dist\RhaegarMove.exe" (
+  set "RHAEGAR_NO_PAUSE=1"
   call verify_build.bat
   if errorlevel 1 (
     echo.
