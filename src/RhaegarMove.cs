@@ -71,12 +71,14 @@ namespace RhaegarMove
         {
             private readonly OperationWorker worker;
             private readonly AppSettings settings;
+            private readonly RuntimeWatcher runtimeWatcher;
             private readonly Timer watchdog;
 
             public AppLoop(OperationWorker worker, AppSettings settings)
             {
                 this.worker = worker;
                 this.settings = settings;
+                runtimeWatcher = new RuntimeWatcher();
                 watchdog = new Timer();
                 watchdog.Interval = Math.Max(100, settings.WatchdogMs);
                 watchdog.Tick += delegate { OnTick(); };
@@ -87,7 +89,7 @@ namespace RhaegarMove
             {
                 worker.Watchdog();
 
-                if (RuntimeControl.ConsumeReloadRequest())
+                if (runtimeWatcher.ConsumeReload())
                 {
                     settings.ReloadFromDisk();
                     WindowRules.Reload();
@@ -96,7 +98,7 @@ namespace RhaegarMove
                     RuntimeControl.WriteRuntime("reload applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 }
 
-                if (RuntimeControl.ConsumeExitRequest())
+                if (runtimeWatcher.ConsumeExit())
                 {
                     RuntimeControl.WriteRuntime("exit applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                     ExitThread();
@@ -109,6 +111,7 @@ namespace RhaegarMove
                 {
                     watchdog.Stop();
                     watchdog.Dispose();
+                    runtimeWatcher.Dispose();
                 }
                 base.Dispose(disposing);
             }
