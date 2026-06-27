@@ -12,8 +12,11 @@ namespace RhaegarMove
         private static AppLoop appLoop;
 
         [STAThread]
-        private static void Main()
+        private static void Main(string[] args)
         {
+            if (RuntimeCommands.TryHandle(args))
+                return;
+
             bool created;
             singleInstance = new System.Threading.Mutex(true, "Local\\RhaegarMove", out created);
             if (!created)
