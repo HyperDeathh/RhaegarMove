@@ -77,6 +77,8 @@ namespace RhaegarMove
                 "snapScore=" + Path.Combine(local, "snap-score.txt") + Environment.NewLine +
                 "runtime=" + RuntimeControl.RuntimePath + Environment.NewLine +
                 "runtimeLastWrite=" + LastWrite(RuntimeControl.RuntimePath) + Environment.NewLine +
+                "lastReloadFile=" + RuntimeControl.LastReloadPath + Environment.NewLine +
+                "lastReload=" + RuntimeControl.ReadLastReloadSummary() + Environment.NewLine +
                 "reloadRequest=" + RuntimeControl.ReloadRequestPath + Environment.NewLine +
                 "reloadRequestPending=" + File.Exists(RuntimeControl.ReloadRequestPath) + Environment.NewLine +
                 "exitRequest=" + RuntimeControl.ExitRequestPath + Environment.NewLine +
