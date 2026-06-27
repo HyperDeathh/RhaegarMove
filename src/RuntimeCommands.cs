@@ -69,12 +69,15 @@ namespace RhaegarMove
                 "settingsCommand=available" + Environment.NewLine +
                 "trayIconConfigured=" + settings.EnableTrayIcon + Environment.NewLine +
                 "trayDefault=false" + Environment.NewLine +
+                "respectWindowMinMaxInfo=" + settings.RespectWindowMinMaxInfo + Environment.NewLine +
+                "allowCloakedWindows=" + settings.AllowCloakedWindows + Environment.NewLine +
                 "config=" + GetConfigPath() + Environment.NewLine +
                 "configReport=" + Path.Combine(local, "config-report.txt") + Environment.NewLine +
                 "rules=" + Path.Combine(local, "rules.txt") + Environment.NewLine +
                 "preview=" + Path.Combine(local, "preview.txt") + Environment.NewLine +
                 "snapTargets=" + Path.Combine(local, "snap-targets.txt") + Environment.NewLine +
                 "snapScore=" + Path.Combine(local, "snap-score.txt") + Environment.NewLine +
+                "minmax=" + Path.Combine(local, "minmax.txt") + Environment.NewLine +
                 "runtime=" + RuntimeControl.RuntimePath + Environment.NewLine +
                 "runtimeLastWrite=" + LastWrite(RuntimeControl.RuntimePath) + Environment.NewLine +
                 "lastReloadFile=" + RuntimeControl.LastReloadPath + Environment.NewLine +
