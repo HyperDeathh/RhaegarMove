@@ -55,6 +55,7 @@ namespace RhaegarMove
                 "config=" + GetConfigPath() + Environment.NewLine +
                 "rules=" + Path.Combine(local, "rules.txt") + Environment.NewLine +
                 "preview=" + Path.Combine(local, "preview.txt") + Environment.NewLine +
+                "snapTargets=" + Path.Combine(local, "snap-targets.txt") + Environment.NewLine +
                 "runtime=" + RuntimeControl.RuntimePath + Environment.NewLine +
                 "reloadRequest=" + RuntimeControl.ReloadRequestPath + Environment.NewLine +
                 "exitRequest=" + RuntimeControl.ExitRequestPath + Environment.NewLine;
