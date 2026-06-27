@@ -29,6 +29,31 @@ namespace RhaegarMove
             }
         }
 
+        public static void FinalDecision(AppSettings settings, string kind, RECT before, RECT after)
+        {
+            if (!settings.EnableSnapDiagnostics)
+                return;
+            try
+            {
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("---");
+                b.AppendLine("kind=" + kind + "-final");
+                b.AppendLine("before=" + FormatRect(before));
+                b.AppendLine("after=" + FormatRect(after));
+                b.AppendLine("dx=" + (after.left - before.left));
+                b.AppendLine("dy=" + (after.top - before.top));
+                b.AppendLine("dw=" + (after.Width - before.Width));
+                b.AppendLine("dh=" + (after.Height - before.Height));
+                b.AppendLine("changed=" + (before.left != after.left || before.top != after.top || before.right != after.right || before.bottom != after.bottom));
+                b.AppendLine();
+                Directory.CreateDirectory(RuntimeControl.ControlDir);
+                File.AppendAllText(Path.Combine(RuntimeControl.ControlDir, "snap-score.txt"), b.ToString());
+            }
+            catch
+            {
+            }
+        }
+
         public SnapScoreDiagnostics(AppSettings settings, string kind, RECT desired, int threshold)
         {
             this.settings = settings;
