@@ -24,6 +24,7 @@ namespace RhaegarMove
             values["SnapGap"] = "0";
             values["StickyResize"] = "false";
             values["RespectWindowMinMaxInfo"] = "true";
+            values["AllowCloakedWindows"] = "false";
             values["EnableRuleDiagnostics"] = "false";
             values["EnableSnapDiagnostics"] = "false";
             values["EnablePreviewState"] = "false";
@@ -49,6 +50,7 @@ namespace RhaegarMove
             values["SnapList"] = "";
             values["NoSizingNotify"] = "";
             values["NoResize"] = "";
+            values["NoMinMaxInfo"] = "";
             return values;
         }
     }
