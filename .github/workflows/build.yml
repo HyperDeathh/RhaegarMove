@@ -34,4 +34,5 @@ jobs:
             preview_status.bat
             reload.bat
             request_exit.bat
+            snap_targets.bat
           if-no-files-found: error
