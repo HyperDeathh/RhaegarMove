@@ -51,9 +51,7 @@ Important features RhaegarMove does not have yet:
 - `ignorekey` / `ignoreclick` style sent-input guards.
 - `blockaltup` / end-key behavior.
 - Advanced blacklist format by process, title, and class.
-- DWM extended-frame / invisible-border correction.
 - DPI-aware restore sizing.
-- Full Aero snap and quarter snap.
 - Snap-to-other-windows.
 - Smart restore metadata for snapped windows.
 - Zone layout support.
@@ -66,45 +64,72 @@ Important features RhaegarMove does not have yet:
 
 ### Phase 1: stable minimal core
 
-- Build must succeed from a clean clone.
-- Manual run must be safe before installing as startup.
-- `stop.bat` and `uninstall.bat` must always work.
-- Test with Notepad, Explorer, Terminal, browser windows, and admin windows.
+Status: in progress.
+
+- Build workflow exists.
+- `stop.bat` and `uninstall.bat` exist.
+- Manual safety test plan exists.
 
 ### Phase 2: window targeting and geometry correctness
 
-- Add better target filtering by class and process name.
-- Add a blacklist file with process/class/title matching.
-- Add DWM extended-frame bounds handling.
-- Add maximized and snapped restore metadata.
-- Add per-monitor work-area handling.
+Status: in progress.
+
+- Basic process/class/title blacklist exists.
+- DWM extended-frame bounds are generated into the build.
+- Per-monitor work-area handling is used by snapping helpers.
+
+Still missing:
+
+- Snapped restore metadata.
+- More complete `process:title|class` matching.
 
 ### Phase 3: snapping
 
-- Add monitor-edge snap.
-- Add left/right/top/corner Aero-style snap.
-- Add snap-to-other-windows.
-- Add speed threshold to avoid accidental snap while moving quickly.
+Status: in progress.
+
+- Monitor-edge snap exists.
+- Left/right/top/corner Aero-style snap is generated into the build.
+- `EnableAeroSnap` and `AeroThreshold` config options exist.
+
+Still missing:
+
+- Snap-to-other-windows.
+- Speed threshold to avoid accidental snap.
 
 ### Phase 4: resize quality
 
-- Add side/center resize regions.
-- Add optional center resize mode.
-- Respect min/max sizing more carefully.
-- Keep sending sizing notifications during resize.
+Status: started.
+
+- Side/center resize region generation exists.
+- `ResizeCenterMode`, `CenterFraction`, and `SidesFraction` config options exist.
+- Resize still sends sizing messages during resize.
+
+Still missing:
+
+- True symmetric center resize.
+- More complete min/max sizing behavior.
 
 ### Phase 5: optional advanced input
 
-- Only consider a keyboard hook after v0.1 is stable.
-- If a keyboard hook is added, it must include explicit Alt-up handling, emergency cancel, sent-input ignore counters, and a documented failure plan.
-- Avoid synthetic keys unless there is no safer approach.
+Status: planned and constrained.
+
+- Keyboard hook is intentionally not added yet.
+- Phase 5 input safety document exists.
+- Future keyboard work requires a documented external stop path and Alt-up reset plan.
 
 ### Phase 6: UX layer
 
-- Optional tray icon.
-- Optional config UI.
-- Portable config fallback.
-- Clear logs for debugging.
+Status: started.
+
+- `status.bat` exists.
+- `open_config.bat` exists.
+- GitHub Actions artifact includes helper scripts.
+
+Still missing:
+
+- Tray UI.
+- Config UI.
+- Runtime logging.
 
 ## Safety checklist before testing
 
@@ -116,4 +141,4 @@ Important features RhaegarMove does not have yet:
 
 ## Known current status
 
-The first source version is intentionally minimal and should be tested manually on Windows. Further iterations should be committed only after each build/test cycle.
+The current source still uses generated-source preparation in `tools/Prepare-Source.ps1`. The goal is to eventually clean `src/RhaegarMove.cs` directly, but generated-source preparation allows smaller, safer iterations while the project is still early.
