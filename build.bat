@@ -16,18 +16,9 @@ if exist "%CSC64%" (
 )
 
 if not exist dist mkdir dist
-if not exist build mkdir build
-
-set "TMP_SRC=build\RhaegarMove.generated.cs"
-
-powershell -NoProfile -ExecutionPolicy Bypass -File "tools\Prepare-Source.ps1" -InputPath "src\RhaegarMove.cs" -OutputPath "%TMP_SRC%"
-if errorlevel 1 (
-  echo [RhaegarMove] Gecici kaynak dosyasi hazirlanamadi.
-  exit /b 1
-)
 
 echo [RhaegarMove] Derleniyor...
-"%CSC%" /nologo /target:winexe /platform:x64 /optimize+ /out:"dist\RhaegarMove.exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "%TMP_SRC%" "src\WindowRules.cs"
+"%CSC%" /nologo /target:winexe /platform:x64 /optimize+ /out:"dist\RhaegarMove.exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /recurse:src\*.cs
 if errorlevel 1 (
   echo [RhaegarMove] Derleme basarisiz.
   exit /b 1
