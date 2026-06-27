@@ -23,6 +23,7 @@ namespace RhaegarMove
             any |= ValidateCsv(b, values, "SnapList", true);
             any |= ValidateCsv(b, values, "NoSizingNotify", true);
             any |= ValidateCsv(b, values, "NoResize", true);
+            any |= ValidateCsv(b, values, "NoMinMaxInfo", true);
 
             if (!any)
                 b.AppendLine("- none");
@@ -92,6 +93,11 @@ namespace RhaegarMove
             if (key.Equals("SnapList", StringComparison.OrdinalIgnoreCase) && item == "*")
             {
                 b.AppendLine("- SnapList=* makes every eligible top-level window a snap target; empty SnapList is usually safer.");
+                any = true;
+            }
+            if (key.Equals("NoMinMaxInfo", StringComparison.OrdinalIgnoreCase) && item == "*")
+            {
+                b.AppendLine("- NoMinMaxInfo=* disables native min/max constraints for every window; prefer per-app rules.");
                 any = true;
             }
             return any;
