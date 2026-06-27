@@ -54,6 +54,7 @@ namespace RhaegarMove
                 state.StartMouse = pt;
                 state.StartRect = rect;
                 state.LastRect = rect;
+                state.PendingRect = rect;
                 state.Edge = kind == OperationKind.Resize ? ResizeEdge.FromPoint(rect, pt, settings) : ResizeEdge.None;
                 state.LastPoint = pt;
                 state.LastTick = Stopwatch.GetTimestamp();
@@ -83,7 +84,7 @@ namespace RhaegarMove
                 if (!state.Active)
                     return MouseButton.None;
                 button = state.Button;
-                FinishLocked();
+                FinishLocked(true);
             }
             PreviewOverlay.HideOverlay();
             return returnButtonForSwallow ? button : MouseButton.None;
@@ -94,7 +95,7 @@ namespace RhaegarMove
             lock (gate)
             {
                 if (state.Active)
-                    FinishLocked();
+                    FinishLocked(false);
             }
             PreviewOverlay.HideOverlay();
         }
@@ -104,12 +105,19 @@ namespace RhaegarMove
             lock (gate)
             {
                 if (state.Active && (!Geometry.IsAltDown() || !NativeMethods.IsWindow(state.Target)))
-                    FinishLocked();
+                    FinishLocked(true);
             }
         }
 
-        private void FinishLocked()
+        private void FinishLocked(bool commitPending)
         {
+            if (commitPending && settings.EnablePreviewOnlySnap && state.HasPendingRect && state.Target != IntPtr.Zero && NativeMethods.IsWindow(state.Target))
+            {
+                RECT r = state.PendingRect;
+                NativeMethods.SetWindowPos(state.Target, IntPtr.Zero, r.left, r.top, r.Width, r.Height,
+                    NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
+            }
+
             if (state.Target != IntPtr.Zero && NativeMethods.IsWindow(state.Target))
                 WindowController.NotifySizeMove(state.Target, false, settings);
             state = new OperationState();
@@ -159,7 +167,14 @@ namespace RhaegarMove
             lock (gate)
             {
                 if (state.Active && state.Target == snapshot.Target)
+                {
                     state.LastRect = result;
+                    if (settings.EnablePreviewOnlySnap)
+                    {
+                        state.PendingRect = result;
+                        state.HasPendingRect = true;
+                    }
+                }
             }
         }
 
@@ -190,8 +205,11 @@ namespace RhaegarMove
             result = SizingConstraints.KeepInsideWorkAreaIfHuge(result, pt);
             SnapPreview.Record("move", result, settings);
             PreviewOverlay.ShowRect(result, settings);
-            NativeMethods.SetWindowPos(s.Target, IntPtr.Zero, result.left, result.top, result.Width, result.Height,
-                NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
+            if (!settings.EnablePreviewOnlySnap)
+            {
+                NativeMethods.SetWindowPos(s.Target, IntPtr.Zero, result.left, result.top, result.Width, result.Height,
+                    NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
+            }
             return result;
         }
 
@@ -208,11 +226,14 @@ namespace RhaegarMove
             desired = SizingConstraints.KeepInsideWorkAreaIfHuge(desired, pt);
             SnapPreview.Record("resize", desired, settings);
             PreviewOverlay.ShowRect(desired, settings);
-            NativeMethods.SetWindowPos(s.Target, IntPtr.Zero, desired.left, desired.top, desired.Width, desired.Height,
-                NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
+            if (!settings.EnablePreviewOnlySnap)
+            {
+                NativeMethods.SetWindowPos(s.Target, IntPtr.Zero, desired.left, desired.top, desired.Width, desired.Height,
+                    NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
 
-            if (!s.Edge.MoveInstead)
-                SnapEngine.ApplyStickyResize(s.Target, s.LastRect, desired, s.Edge, settings);
+                if (!s.Edge.MoveInstead)
+                    SnapEngine.ApplyStickyResize(s.Target, s.LastRect, desired, s.Edge, settings);
+            }
 
             return desired;
         }
@@ -238,6 +259,8 @@ namespace RhaegarMove
             public POINT StartMouse;
             public RECT StartRect;
             public RECT LastRect;
+            public RECT PendingRect;
+            public bool HasPendingRect;
             public ResizeEdge Edge;
             public POINT LastPoint;
             public long LastTick;
