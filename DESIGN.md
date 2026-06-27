@@ -33,12 +33,13 @@ These are high-level lessons only, not copied code:
 - Coalesce mouse-move work outside of the hook callback.
 - Store snapped-window restore metadata so dragging a snapped window can restore to a sensible size.
 - Keep window rules data-driven so fragile shell/app surfaces can be excluded without code changes.
+- Marshal UI preview work back to the WinForms UI thread.
 
 ## Current source layout
 
 The source is now modular:
 
-- `RhaegarMove.cs`: app entry, single-instance guard, watchdog lifecycle.
+- `RhaegarMove.cs`: app entry, single-instance guard, watchdog lifecycle, runtime command routing.
 - `NativeMethods.cs`: Win32 constants, structs, delegates, and P/Invoke declarations.
 - `MouseHook.cs`: low-level mouse hook coordinator.
 - `OperationWorker.cs`: coalesces mouse-move operations outside the hook callback.
@@ -49,7 +50,9 @@ The source is now modular:
 - `ResizeEngine.cs`: resize-region selection and rectangle calculation.
 - `SizingConstraints.cs`: config-based min/max size clamping.
 - `RuleDiagnostics.cs`: rule decision snapshots for debugging.
+- `RuntimeCommands.cs`: command-line diagnostics and runtime output file helpers.
 - `SnapPreview.cs`: preview-state snapshots for future outline UI.
+- `PreviewOverlay.cs`: optional transparent outline overlay, disabled by default.
 - `SnapEngine.cs`: monitor snapping, Aero-style snapping, window-edge snapping, and sticky resize basics.
 - `WindowRestoreStore.cs`: SetProp/GetProp restore metadata with an in-process fallback dictionary.
 - `AppSettings.cs`: typed INI option loader.
@@ -199,7 +202,7 @@ Still missing:
 
 ### Phase 13: min/max sizing
 
-Status: started.
+Status: in progress.
 
 - `SizingConstraints` applies config-based min/max clamping after move and resize calculations.
 - `MaxWidth` and `MaxHeight` settings exist. A value of `0` means unlimited.
@@ -211,29 +214,67 @@ Still missing:
 
 ### Phase 14: rule diagnostics
 
-Status: started.
+Status: in progress.
 
 - `RuleDiagnostics` can write a decision snapshot to `%LOCALAPPDATA%\RhaegarMove\rules.txt`.
 - `EnableRuleDiagnostics=false` by default.
-- When enabled, gesture start writes class/title and ignore/snap/resize decisions for the selected window.
+- Gesture start can write class/title and ignore/snap/resize decisions for the selected window.
+- Diagnostics now include matched rule explanations such as `Classes:...`, `Rules:...`, `SnapList:...`, `NoResize:...`.
+- `diagnose_cursor.bat` can dump the rule decision for the window under the cursor.
 
 Still missing:
 
-- Exact matched-rule name in diagnostics.
-- CLI command to dump diagnostics for the window under cursor.
+- A richer interactive inspector UI.
 
 ### Phase 15: preview and outline foundation
 
-Status: started.
+Status: in progress.
 
 - `SnapPreview` records the latest move/resize target rectangle to `%LOCALAPPDATA%\RhaegarMove\preview.txt`.
 - `EnablePreviewState=false` by default.
 - Worker records preview state before applying the move/resize.
+- `preview_status.bat` can show the last preview state.
+
+### Phase 16: preview overlay
+
+Status: started.
+
+- `PreviewOverlay` implements an optional transparent outline window.
+- `EnablePreviewOverlay=false` by default.
+- Overlay creation happens on the WinForms UI thread.
+- Worker updates are marshaled to the UI thread before changing overlay bounds.
 
 Still missing:
 
-- Actual transparent outline overlay.
-- Preview-only mode that does not commit snap until mouse release.
+- Preview-only mode that commits snap only on mouse release.
+- Custom colors/thickness.
+
+### Phase 17: runtime control
+
+Status: started.
+
+- `RuntimeCommands` routes diagnostic commands before starting the main hook app.
+- Supported commands: `--status`, `--config-path`, `--diagnose-cursor`, `--preview-status`.
+- Runtime command output is persisted to `%LOCALAPPDATA%\RhaegarMove\runtime.txt` so it works with a `winexe` build.
+- `status.bat`, `diagnose_cursor.bat`, and `preview_status.bat` read back runtime output.
+
+Still missing:
+
+- Safe in-process reload.
+- Graceful stop command. A first `--stop` design was blocked by tooling, so `stop.bat` remains the stop path.
+
+### Phase 18: diagnostics refinement
+
+Status: started.
+
+- Rule diagnostics now report the rule category and matched pattern when possible.
+- Cursor diagnostics helper exists.
+- Runtime status points to diagnostic output files.
+
+Still missing:
+
+- Per-action diagnostics for future non-move/resize actions.
+- Diagnostics for snap target rejection reasons inside `SnapEngine`.
 
 ## Safety checklist before testing
 
@@ -245,4 +286,4 @@ Still missing:
 
 ## Known current status
 
-RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code is now modular and has the correct direction: worker boundary, restore metadata, snap-to-window basics, advanced rules, DPI-aware restore, sticky resize infrastructure, config-based min/max sizing, and debug/preview state hooks. The next high-value area is a real preview overlay, better rule diagnostics, and isolated native min/max querying.
+RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code is now modular and has the correct direction: worker boundary, restore metadata, snap-to-window basics, advanced rules, DPI-aware restore, sticky resize infrastructure, config-based min/max sizing, runtime diagnostics, and an optional UI-thread-safe preview overlay. The next high-value area is config reload, a safe stop signal, and deeper snap target diagnostics.
