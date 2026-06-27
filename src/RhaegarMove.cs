@@ -104,7 +104,7 @@ namespace RhaegarMove
                 WindowRules.Reload();
                 ConfigValidation.WriteReport(settings, "reload");
                 watchdog.Interval = Math.Max(100, settings.WatchdogMs);
-                trayIcon.SetVisible(settings.EnableTrayIcon);
+                trayIcon.RefreshSettings(settings);
                 RuntimeControl.WriteRuntime("reload applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
             }
 
