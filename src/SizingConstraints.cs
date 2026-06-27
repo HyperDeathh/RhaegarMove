@@ -52,6 +52,13 @@ namespace RhaegarMove
             return new RECT(left, top, right, bottom);
         }
 
+        public static RECT ApplyAll(IntPtr hwnd, RECT desired, ResizeEdge edge, AppSettings settings)
+        {
+            RECT result = Apply(desired, edge, settings);
+            result = WindowMinMax.Apply(hwnd, result, edge, settings);
+            return result;
+        }
+
         public static RECT KeepInsideWorkAreaIfHuge(RECT desired, POINT anchor)
         {
             RECT work;
