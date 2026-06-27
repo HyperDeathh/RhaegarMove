@@ -27,10 +27,10 @@ namespace RhaegarMove
             if (WindowRules.ShouldIgnoreWindow(hwnd, cls))
                 return IntPtr.Zero;
 
-            if (!settings.AllowFullscreenWindows && IsFullscreen(hwnd))
+            if (!settings.AllowFullScreenWindows && IsFullscreen(hwnd))
                 return IntPtr.Zero;
 
-            if (settings.IgnoreMaximizedWindows && NativeMethods.IsZoomed(hwnd))
+            if (settings.SkipMaximizedWindows && NativeMethods.IsZoomed(hwnd))
                 return IntPtr.Zero;
 
             return hwnd;
