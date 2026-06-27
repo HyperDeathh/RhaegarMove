@@ -19,4 +19,6 @@ echo [RhaegarMove] Runtime file:
 set "RUNTIME=%LOCALAPPDATA%\RhaegarMove\runtime.txt"
 if exist "%RUNTIME%" type "%RUNTIME%" else echo Runtime file not found.
 
+echo.
+pause
 endlocal
