@@ -1,8 +1,14 @@
 # RhaegarMove
 
-RhaegarMove is a small Windows utility for moving and resizing desktop windows with Alt + mouse drag.
+> **Project status: unfinished / abandoned experiment**
+>
+> This repository is left in a half-finished state. It was an experimental clean-room attempt to build an AltSnap-like Windows Alt+drag utility, but it is **not stable**, **not final**, and **not recommended for daily use**. The current code may build on some machines, but real-world input behavior was not confirmed as reliable.
+>
+> Development has been stopped unless the project is explicitly resumed later.
 
-Default controls:
+RhaegarMove is a small Windows utility experiment for moving and resizing desktop windows with Alt + mouse drag.
+
+Default intended controls:
 
 ```text
 Alt + Left Mouse Drag  = move window
@@ -11,9 +17,19 @@ Alt + Right Mouse Drag = resize window
 
 ## Status
 
-RhaegarMove is a clean-room AltSnap-inspired implementation. It is feature-rich now, but it should still be treated as a cautious build until a real Windows build/test result is confirmed.
+This project is **unfinished**.
 
-The input model is intentionally conservative:
+Known situation:
+
+- The project reached a feature-heavy prototype state.
+- Build/run behavior was not reliably confirmed on a real Windows setup.
+- The app did not successfully work in the first real Notepad drag test.
+- Batch/script UX had issues during testing and was only partially cleaned up.
+- Low-level input utilities can make mouse/keyboard behavior feel broken if implemented incorrectly.
+
+Do not treat this as a finished AltSnap replacement.
+
+The input model was intentionally conservative:
 
 - Uses a low-level mouse hook.
 - Does not use a low-level keyboard hook.
@@ -21,13 +37,16 @@ The input model is intentionally conservative:
 - Does not try to hide from Task Manager.
 - Tray icon is disabled by default.
 
-## Files you actually need
+## Files that were intended to matter
 
-For normal use, these are the important files:
+For normal use, these were the intended important files:
 
 ```text
 RhaegarMove.exe      main app, built into dist\
 RhaegarMove.ini      config
+build.bat            compile locally
+verify_build.bat     compile and check dist\RhaegarMove.exe exists
+run.bat              run local test build
 install.bat          install to C:\Program Files\RhaegarMove and enable startup
 uninstall.bat        remove install/startup task
 stop.bat             emergency stop
@@ -36,11 +55,11 @@ settings.bat         open settings window without tray
 tools.bat            optional debug/tools menu
 ```
 
-Debug reports are no longer separate `.bat` files. Open `tools.bat` if you need diagnostics.
+Debug reports were consolidated under `tools.bat`.
 
 ## Build
 
-Open a normal Command Prompt in the repository folder and run:
+The intended build command was:
 
 ```bat
 verify_build.bat
@@ -58,11 +77,9 @@ The normal build path uses the .NET Framework C# compiler usually available on W
 %WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe
 ```
 
-No MSYS2, MinGW, or Visual Studio install is required for the normal build path.
-
 ## Test before installing
 
-Before installing as startup, test locally:
+If anyone resumes this project, test locally before installing:
 
 ```bat
 verify_build.bat
@@ -73,7 +90,7 @@ Use Notepad for the first test.
 
 ## Install
 
-Run as administrator:
+Installation was intended to be done with:
 
 ```bat
 install.bat
@@ -86,6 +103,8 @@ C:\Program Files\RhaegarMove
 ```
 
 Then it creates a Windows Scheduled Task named `RhaegarMove` that starts on user logon.
+
+Because the project is unfinished, installing it as a startup app is not recommended.
 
 ## Uninstall
 
@@ -109,8 +128,6 @@ Tray icon is disabled by default:
 EnableTrayIcon=false
 ```
 
-It can be enabled from config/settings if desired, but the default UX is trayless.
-
 ## Diagnostics
 
 Use one entry point:
@@ -123,7 +140,7 @@ It contains status, reload, graceful exit, cursor diagnostics, config report, sn
 
 ## Safety notes
 
-RhaegarMove touches low-level Windows input. Bugs in this kind of software can make input feel broken, so the code is intentionally conservative.
+RhaegarMove touches low-level Windows input. Bugs in this kind of software can make input feel broken.
 
 If anything feels wrong, run:
 
