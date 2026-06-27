@@ -23,7 +23,7 @@ namespace RhaegarMove
             this.afterSave = afterSave;
             Text = "RhaegarMove Window Rules";
             StartPosition = FormStartPosition.CenterScreen;
-            Size = new Size(720, 760);
+            Size = new Size(720, 800);
             MinimizeBox = false;
             MaximizeBox = false;
             BuildUi();
@@ -36,7 +36,7 @@ namespace RhaegarMove
             TableLayoutPanel root = new TableLayoutPanel();
             root.Dock = DockStyle.Fill;
             root.ColumnCount = 1;
-            root.RowCount = 13;
+            root.RowCount = 14;
             root.Padding = new Padding(12);
             root.AutoScroll = true;
             Controls.Add(root);
@@ -55,6 +55,13 @@ namespace RhaegarMove
             note.AutoSize = true;
             note.Dock = DockStyle.Fill;
             root.Controls.Add(note);
+
+            Button help = new Button();
+            help.Text = "Rule examples and troubleshooting help...";
+            help.Height = 32;
+            help.Dock = DockStyle.Fill;
+            help.Click += delegate { new RuleHelpForm().ShowDialog(this); };
+            root.Controls.Add(help);
 
             validationLabel = new Label();
             validationLabel.AutoSize = true;
