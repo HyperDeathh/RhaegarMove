@@ -40,6 +40,13 @@ namespace RhaegarMove
             b.AppendLine("SidesFraction=" + s.SidesFraction);
             b.AppendLine("AeroMaxSpeed=" + s.AeroMaxSpeed);
             b.AppendLine("AeroSpeedTau=" + s.AeroSpeedTau);
+            b.AppendLine("EnablePreviewOnlySnap=" + s.EnablePreviewOnlySnap);
+            b.AppendLine();
+            b.AppendLine("[unknown keys]");
+            AppendListOrNone(b, s.UnknownConfigKeys);
+            b.AppendLine();
+            b.AppendLine("[normalization notes]");
+            AppendListOrNone(b, s.NormalizationNotes);
             b.AppendLine();
             b.AppendLine("[warnings]");
             AppendWarnings(b, s);
@@ -48,9 +55,22 @@ namespace RhaegarMove
 
         private static string GetStatus(AppSettings s)
         {
-            if (s.StickyResize || s.EnablePreviewOverlay || s.EnableSnapDiagnostics || s.EnableRuleDiagnostics)
+            if (s.UnknownConfigKeys.Count > 0 || s.NormalizationNotes.Count > 0)
+                return "config has unknown or normalized values";
+            if (s.StickyResize || s.EnablePreviewOverlay || s.EnablePreviewOnlySnap || s.EnableSnapDiagnostics || s.EnableRuleDiagnostics)
                 return "advanced diagnostics/features enabled";
             return "safe defaults or normal options";
+        }
+
+        private static void AppendListOrNone(StringBuilder b, System.Collections.Generic.List<string> values)
+        {
+            if (values.Count == 0)
+            {
+                b.AppendLine("- none");
+                return;
+            }
+            for (int i = 0; i < values.Count; i++)
+                b.AppendLine("- " + values[i]);
         }
 
         private static void AppendWarnings(StringBuilder b, AppSettings s)
@@ -76,9 +96,14 @@ namespace RhaegarMove
                 b.AppendLine("- Preview overlay is enabled; a topmost transparent outline window may appear.");
                 any = true;
             }
+            if (s.EnablePreviewOnlySnap)
+            {
+                b.AppendLine("- Preview-only snap is enabled; moves/resizes are previewed and committed on release.");
+                any = true;
+            }
             if (s.EnableSnapDiagnostics)
             {
-                b.AppendLine("- Snap diagnostics are enabled; snap-target reports may be rewritten often during gestures.");
+                b.AppendLine("- Snap diagnostics are enabled; snap-target and scoring reports may be rewritten often during gestures.");
                 any = true;
             }
             if (s.EnableRuleDiagnostics)
