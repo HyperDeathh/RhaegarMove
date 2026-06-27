@@ -31,6 +31,22 @@ namespace RhaegarMove
             return NativeMethods.GetWindowRect(hwnd, out rect);
         }
 
+        public static bool IsDwmCloaked(IntPtr hwnd)
+        {
+            if (hwnd == IntPtr.Zero)
+                return false;
+            try
+            {
+                int cloaked;
+                if (NativeMethods.DwmGetWindowAttributeInt(hwnd, NativeMethods.DWMWA_CLOAKED, out cloaked, Marshal.SizeOf(typeof(int))) == 0)
+                    return cloaked != 0;
+            }
+            catch
+            {
+            }
+            return false;
+        }
+
         public static bool TryGetMonitorWorkArea(POINT pt, out RECT work)
         {
             work = new RECT();
