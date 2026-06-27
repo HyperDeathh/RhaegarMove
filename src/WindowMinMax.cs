@@ -12,6 +12,13 @@ namespace RhaegarMove
             if (hwnd == IntPtr.Zero || !NativeMethods.IsWindow(hwnd))
                 return desired;
 
+            string className = Geometry.ClassName(hwnd);
+            if (!WindowRules.ShouldRespectMinMaxInfo(hwnd, className))
+            {
+                WindowMinMaxDiagnostics.RecordSkipped(hwnd, "NoMinMaxInfo rule", settings);
+                return desired;
+            }
+
             MINMAXINFO info;
             if (!TryGet(hwnd, out info))
                 return desired;
@@ -26,12 +33,17 @@ namespace RhaegarMove
             int clampedWidth = Clamp(width, minWidth, maxWidth);
             int clampedHeight = Clamp(height, minHeight, maxHeight);
             if (clampedWidth == width && clampedHeight == height)
+            {
+                WindowMinMaxDiagnostics.Record(hwnd, info, desired, desired, settings);
                 return desired;
+            }
 
-            return ApplySize(desired, edge, clampedWidth, clampedHeight);
+            RECT result = ApplySize(desired, edge, clampedWidth, clampedHeight);
+            WindowMinMaxDiagnostics.Record(hwnd, info, desired, result, settings);
+            return result;
         }
 
-        private static bool TryGet(IntPtr hwnd, out MINMAXINFO info)
+        public static bool TryGet(IntPtr hwnd, out MINMAXINFO info)
         {
             info = new MINMAXINFO();
             IntPtr ptr = IntPtr.Zero;
