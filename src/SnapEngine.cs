@@ -45,7 +45,7 @@ namespace RhaegarMove
             if (settings.SnapToWindows && settings.AutoSnap >= 2)
             {
                 List<SnapTarget> targets = CollectTargets(hwnd, settings);
-                SnapToWindowEdges(ref desired, targets, threshold, settings.SnapGap, settings.AutoSnap >= 3);
+                SnapToWindowEdges(ref desired, targets, threshold, settings.SnapGap, settings.AutoSnap >= 3, settings);
             }
 
             if (desired.left != x || desired.top != y)
@@ -69,7 +69,7 @@ namespace RhaegarMove
             if (settings.SnapToWindows && settings.AutoSnap >= 2)
             {
                 List<SnapTarget> targets = CollectTargets(hwnd, settings);
-                SnapResizeToWindows(ref desired, edge, targets, threshold, settings.SnapGap, settings.AutoSnap >= 3);
+                SnapResizeToWindows(ref desired, edge, targets, threshold, settings.SnapGap, settings.AutoSnap >= 3, settings);
             }
         }
 
@@ -177,7 +177,7 @@ namespace RhaegarMove
             if (edge.Bottom && Math.Abs(desired.bottom - work.bottom) <= threshold) desired.bottom = work.bottom - gap;
         }
 
-        private static void SnapToWindowEdges(ref RECT desired, List<SnapTarget> targets, int threshold, int gap, bool inside)
+        private static void SnapToWindowEdges(ref RECT desired, List<SnapTarget> targets, int threshold, int gap, bool inside, AppSettings settings)
         {
             int width = desired.Width;
             int height = desired.Height;
@@ -185,68 +185,86 @@ namespace RhaegarMove
             int bestDy = 0;
             int bestAbsX = threshold + 1;
             int bestAbsY = threshold + 1;
+            SnapScoreDiagnostics score = new SnapScoreDiagnostics(settings, "move", desired, threshold);
 
             foreach (SnapTarget target in targets)
             {
                 RECT r = target.Rect;
                 if (Geometry.RectsOverlapVertically(desired, r, threshold))
                 {
-                    Consider(r.right + gap - desired.left, ref bestDx, ref bestAbsX, threshold);
-                    Consider(r.left - gap - desired.right, ref bestDx, ref bestAbsX, threshold);
+                    Consider("move-left-to-target-right", r.right + gap - desired.left, ref bestDx, ref bestAbsX, threshold, score);
+                    Consider("move-right-to-target-left", r.left - gap - desired.right, ref bestDx, ref bestAbsX, threshold, score);
                     if (inside)
                     {
-                        Consider(r.left + gap - desired.left, ref bestDx, ref bestAbsX, threshold);
-                        Consider(r.right - gap - desired.right, ref bestDx, ref bestAbsX, threshold);
+                        Consider("move-left-to-target-left", r.left + gap - desired.left, ref bestDx, ref bestAbsX, threshold, score);
+                        Consider("move-right-to-target-right", r.right - gap - desired.right, ref bestDx, ref bestAbsX, threshold, score);
                     }
                 }
                 if (Geometry.RectsOverlapHorizontally(desired, r, threshold))
                 {
-                    Consider(r.bottom + gap - desired.top, ref bestDy, ref bestAbsY, threshold);
-                    Consider(r.top - gap - desired.bottom, ref bestDy, ref bestAbsY, threshold);
+                    Consider("move-top-to-target-bottom", r.bottom + gap - desired.top, ref bestDy, ref bestAbsY, threshold, score);
+                    Consider("move-bottom-to-target-top", r.top - gap - desired.bottom, ref bestDy, ref bestAbsY, threshold, score);
                     if (inside)
                     {
-                        Consider(r.top + gap - desired.top, ref bestDy, ref bestAbsY, threshold);
-                        Consider(r.bottom - gap - desired.bottom, ref bestDy, ref bestAbsY, threshold);
+                        Consider("move-top-to-target-top", r.top + gap - desired.top, ref bestDy, ref bestAbsY, threshold, score);
+                        Consider("move-bottom-to-target-bottom", r.bottom - gap - desired.bottom, ref bestDy, ref bestAbsY, threshold, score);
                     }
                 }
             }
 
+            score.Flush();
             desired.left += bestDx;
             desired.top += bestDy;
             desired.right = desired.left + width;
             desired.bottom = desired.top + height;
         }
 
-        private static void SnapResizeToWindows(ref RECT desired, ResizeEdge edge, List<SnapTarget> targets, int threshold, int gap, bool inside)
+        private static void SnapResizeToWindows(ref RECT desired, ResizeEdge edge, List<SnapTarget> targets, int threshold, int gap, bool inside, AppSettings settings)
         {
+            SnapScoreDiagnostics score = new SnapScoreDiagnostics(settings, "resize", desired, threshold);
             foreach (SnapTarget target in targets)
             {
                 RECT r = target.Rect;
                 if (Geometry.RectsOverlapVertically(desired, r, threshold))
                 {
+                    if (edge.Left) ScoreResizeCandidate("resize-left-to-target-right", desired.left - r.right, score, threshold);
+                    if (edge.Right) ScoreResizeCandidate("resize-right-to-target-left", desired.right - r.left, score, threshold);
                     if (edge.Left && Math.Abs(desired.left - r.right) <= threshold) desired.left = r.right + gap;
                     if (edge.Right && Math.Abs(desired.right - r.left) <= threshold) desired.right = r.left - gap;
                     if (inside)
                     {
+                        if (edge.Left) ScoreResizeCandidate("resize-left-to-target-left", desired.left - r.left, score, threshold);
+                        if (edge.Right) ScoreResizeCandidate("resize-right-to-target-right", desired.right - r.right, score, threshold);
                         if (edge.Left && Math.Abs(desired.left - r.left) <= threshold) desired.left = r.left + gap;
                         if (edge.Right && Math.Abs(desired.right - r.right) <= threshold) desired.right = r.right - gap;
                     }
                 }
                 if (Geometry.RectsOverlapHorizontally(desired, r, threshold))
                 {
+                    if (edge.Top) ScoreResizeCandidate("resize-top-to-target-bottom", desired.top - r.bottom, score, threshold);
+                    if (edge.Bottom) ScoreResizeCandidate("resize-bottom-to-target-top", desired.bottom - r.top, score, threshold);
                     if (edge.Top && Math.Abs(desired.top - r.bottom) <= threshold) desired.top = r.bottom + gap;
                     if (edge.Bottom && Math.Abs(desired.bottom - r.top) <= threshold) desired.bottom = r.top - gap;
                     if (inside)
                     {
+                        if (edge.Top) ScoreResizeCandidate("resize-top-to-target-top", desired.top - r.top, score, threshold);
+                        if (edge.Bottom) ScoreResizeCandidate("resize-bottom-to-target-bottom", desired.bottom - r.bottom, score, threshold);
                         if (edge.Top && Math.Abs(desired.top - r.top) <= threshold) desired.top = r.top + gap;
                         if (edge.Bottom && Math.Abs(desired.bottom - r.bottom) <= threshold) desired.bottom = r.bottom - gap;
                     }
                 }
             }
+            score.Flush();
         }
 
-        private static void Consider(int delta, ref int bestDelta, ref int bestAbs, int threshold)
+        private static void ScoreResizeCandidate(string label, int delta, SnapScoreDiagnostics score, int threshold)
         {
+            score.Candidate(label, delta, threshold);
+        }
+
+        private static void Consider(string label, int delta, ref int bestDelta, ref int bestAbs, int threshold, SnapScoreDiagnostics score)
+        {
+            score.Candidate(label, delta, threshold);
             int abs = Math.Abs(delta);
             if (abs <= threshold && abs < bestAbs)
             {
