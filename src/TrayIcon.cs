@@ -7,7 +7,7 @@ namespace RhaegarMove
 {
     internal sealed class TrayIcon : IDisposable
     {
-        private readonly NotifyIcon notifyIcon;
+        private NotifyIcon notifyIcon;
         private readonly Action reloadAction;
         private readonly Action exitAction;
 
@@ -15,11 +15,15 @@ namespace RhaegarMove
         {
             this.reloadAction = reloadAction;
             this.exitAction = exitAction;
+            RefreshSettings(settings);
+        }
 
+        private void CreateIcon(AppSettings settings)
+        {
             notifyIcon = new NotifyIcon();
             notifyIcon.Text = BuildTooltip(settings);
             notifyIcon.Icon = System.Drawing.SystemIcons.Application;
-            notifyIcon.Visible = settings.EnableTrayIcon;
+            notifyIcon.Visible = true;
             notifyIcon.ContextMenuStrip = BuildMenu();
         }
 
@@ -60,13 +64,30 @@ namespace RhaegarMove
 
         public void RefreshSettings(AppSettings settings)
         {
-            notifyIcon.Text = BuildTooltip(settings);
-            notifyIcon.Visible = settings.EnableTrayIcon;
+            if (!settings.EnableTrayIcon)
+            {
+                DisposeIcon();
+                return;
+            }
+
+            if (notifyIcon == null)
+                CreateIcon(settings);
+            else
+            {
+                notifyIcon.Text = BuildTooltip(settings);
+                notifyIcon.Visible = true;
+            }
         }
 
         public void SetVisible(bool visible)
         {
-            notifyIcon.Visible = visible;
+            if (!visible)
+            {
+                DisposeIcon();
+                return;
+            }
+            if (notifyIcon != null)
+                notifyIcon.Visible = true;
         }
 
         private static ToolStripMenuItem MakeOpenFileItem(string text, string fileName)
@@ -133,8 +154,16 @@ namespace RhaegarMove
 
         public void Dispose()
         {
+            DisposeIcon();
+        }
+
+        private void DisposeIcon()
+        {
+            if (notifyIcon == null)
+                return;
             notifyIcon.Visible = false;
             notifyIcon.Dispose();
+            notifyIcon = null;
         }
     }
 }
