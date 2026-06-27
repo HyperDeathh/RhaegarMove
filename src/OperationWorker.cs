@@ -186,6 +186,7 @@ namespace RhaegarMove
             SnapEngine.TryApplyMoveSnap(s.Target, pt, ref x, ref y, ref width, ref height, s.StartRect, settings, speed);
             RECT result = SizingConstraints.Apply(new RECT(x, y, x + width, y + height), ResizeEdge.None, settings);
             result = SizingConstraints.KeepInsideWorkAreaIfHuge(result, pt);
+            SnapPreview.Record("move", result, settings);
             NativeMethods.SetWindowPos(s.Target, IntPtr.Zero, result.left, result.top, result.Width, result.Height,
                 NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
             return result;
@@ -202,6 +203,7 @@ namespace RhaegarMove
 
             desired = SizingConstraints.Apply(desired, s.Edge, settings);
             desired = SizingConstraints.KeepInsideWorkAreaIfHuge(desired, pt);
+            SnapPreview.Record("resize", desired, settings);
             NativeMethods.SetWindowPos(s.Target, IntPtr.Zero, desired.left, desired.top, desired.Width, desired.Height,
                 NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
 
