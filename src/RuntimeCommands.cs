@@ -18,9 +18,19 @@ namespace RhaegarMove
                 WriteStatus();
                 return true;
             }
+            if (command == "--reload" || command == "/reload")
+            {
+                RuntimeControl.RequestReload();
+                return true;
+            }
+            if (command == "--request-exit" || command == "/request-exit")
+            {
+                RuntimeControl.RequestExit();
+                return true;
+            }
             if (command == "--config-path" || command == "/config-path")
             {
-                WriteRuntimeFile(GetConfigPath());
+                RuntimeControl.WriteRuntime(GetConfigPath());
                 return true;
             }
             if (command == "--diagnose-cursor" || command == "/diagnose-cursor")
@@ -30,7 +40,7 @@ namespace RhaegarMove
             }
             if (command == "--preview-status" || command == "/preview-status")
             {
-                WriteRuntimeFile(SnapPreview.DescribeLast());
+                RuntimeControl.WriteRuntime(SnapPreview.DescribeLast());
                 return true;
             }
             return false;
@@ -39,13 +49,16 @@ namespace RhaegarMove
         private static void WriteStatus()
         {
             bool running = Process.GetProcessesByName("RhaegarMove").Length > 0;
-            string local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RhaegarMove");
+            string local = RuntimeControl.ControlDir;
             string text =
                 "RhaegarMove running=" + running + Environment.NewLine +
                 "config=" + GetConfigPath() + Environment.NewLine +
                 "rules=" + Path.Combine(local, "rules.txt") + Environment.NewLine +
-                "preview=" + Path.Combine(local, "preview.txt") + Environment.NewLine;
-            WriteRuntimeFile(text);
+                "preview=" + Path.Combine(local, "preview.txt") + Environment.NewLine +
+                "runtime=" + RuntimeControl.RuntimePath + Environment.NewLine +
+                "reloadRequest=" + RuntimeControl.ReloadRequestPath + Environment.NewLine +
+                "exitRequest=" + RuntimeControl.ExitRequestPath + Environment.NewLine;
+            RuntimeControl.WriteRuntime(text);
         }
 
         private static string GetConfigPath()
@@ -61,20 +74,7 @@ namespace RhaegarMove
             hwnd = hwnd == IntPtr.Zero ? IntPtr.Zero : NativeMethods.GetAncestor(hwnd, NativeMethods.GA_ROOT);
             string text = RuleDiagnostics.DescribeWindow(hwnd);
             RuleDiagnostics.WriteSnapshot("diagnose-cursor", hwnd);
-            WriteRuntimeFile(text);
-        }
-
-        private static void WriteRuntimeFile(string text)
-        {
-            try
-            {
-                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RhaegarMove");
-                Directory.CreateDirectory(dir);
-                File.WriteAllText(Path.Combine(dir, "runtime.txt"), text ?? string.Empty);
-            }
-            catch
-            {
-            }
+            RuntimeControl.WriteRuntime(text);
         }
     }
 }
