@@ -43,7 +43,7 @@ stop.bat
 
 12. Confirm the process exits.
 
-## Phase 2 blacklist test
+## Phase 2 blacklist and geometry test
 
 Targets that should not move:
 
@@ -60,6 +60,31 @@ Steps:
 3. Try Alt + left drag on the taskbar.
 4. Try Alt + left drag around Start menu/search surfaces.
 5. Confirm RhaegarMove ignores those targets.
+6. Move a normal app near screen edges and confirm the visible frame does not drift because of invisible borders.
+
+## Phase 3 Aero snap test
+
+Target app: Notepad or File Explorer.
+
+1. Run `run.bat`.
+2. Hold Alt + left drag the window to the left edge.
+3. Confirm it fills the left half of the monitor.
+4. Drag to the right edge.
+5. Confirm it fills the right half of the monitor.
+6. Drag to the top edge.
+7. Confirm it fills the monitor work area.
+8. Drag to each corner.
+9. Confirm quarter-screen snap works.
+10. Release Alt/mouse and confirm normal clicks still work.
+
+Config toggles:
+
+```ini
+EnableAeroSnap=true
+AeroThreshold=8
+```
+
+If snap triggers too easily, lower `AeroThreshold`. If it does not trigger, raise it.
 
 ## App compatibility pass
 
@@ -81,6 +106,7 @@ Stop immediately if any of these happen:
 - Alt feels stuck.
 - You cannot click the taskbar normally.
 - The dragged app keeps moving after mouse release.
+- Aero snap keeps fighting normal dragging away from edges.
 
 Run:
 
