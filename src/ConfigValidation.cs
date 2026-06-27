@@ -33,6 +33,7 @@ namespace RhaegarMove
             b.AppendLine("MaxHeight=" + s.MaxHeight);
             b.AppendLine("WatchdogMs=" + s.WatchdogMs);
             b.AppendLine("AeroThreshold=" + s.AeroThreshold);
+            b.AppendLine("AeroTopMaximizes=" + s.AeroTopMaximizes);
             b.AppendLine("AutoSnap=" + s.AutoSnap);
             b.AppendLine("SnapGap=" + s.SnapGap);
             b.AppendLine("ResizeCenterMode=" + s.ResizeCenterMode);
@@ -40,6 +41,7 @@ namespace RhaegarMove
             b.AppendLine("SidesFraction=" + s.SidesFraction);
             b.AppendLine("AeroMaxSpeed=" + s.AeroMaxSpeed);
             b.AppendLine("AeroSpeedTau=" + s.AeroSpeedTau);
+            b.AppendLine("RespectWindowMinMaxInfo=" + s.RespectWindowMinMaxInfo);
             b.AppendLine("EnablePreviewOnlySnap=" + s.EnablePreviewOnlySnap);
             b.AppendLine("EnableTrayIcon=" + s.EnableTrayIcon);
             b.AppendLine();
@@ -91,6 +93,11 @@ namespace RhaegarMove
             if (s.SnapThreshold > 64)
             {
                 b.AppendLine("- SnapThreshold is high; windows may snap from farther away than expected.");
+                any = true;
+            }
+            if (!s.RespectWindowMinMaxInfo)
+            {
+                b.AppendLine("- Native window min/max constraints are disabled; some apps may resize past their own limits.");
                 any = true;
             }
             if (s.StickyResize)
