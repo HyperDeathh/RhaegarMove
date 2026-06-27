@@ -25,6 +25,8 @@ jobs:
           path: |
             dist/RhaegarMove.exe
             RhaegarMove.ini
+            build.bat
+            verify_build.bat
             run.bat
             install.bat
             uninstall.bat
