@@ -32,4 +32,6 @@ jobs:
             open_config.bat
             diagnose_cursor.bat
             preview_status.bat
+            reload.bat
+            request_exit.bat
           if-no-files-found: error
