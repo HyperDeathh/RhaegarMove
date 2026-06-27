@@ -33,7 +33,7 @@ Why this matters:
 
 Still missing:
 
-- Dedicated UI validation examples for app-specific min/max opt-out rules.
+- Presets gathered from real problematic apps after testing.
 
 ## Phase 44: preview-only sticky resize commit
 
@@ -107,6 +107,7 @@ Implemented:
 - Diagnostics include class, title, min track size, max track size, max size, max position, before rect, after rect, and changed flag.
 - `minmax_report.bat` helper prints the report.
 - `diagnose_cursor.bat` now includes native min/max values for the cursor window when available.
+- `RuleHelpForm` documents when to use `NoMinMaxInfo`.
 
 Why this matters:
 
@@ -115,7 +116,7 @@ Why this matters:
 
 Still missing:
 
-- Min/max values in the settings UI rule helper panel.
+- Min/max values directly inside the settings help panel from the currently selected cursor window.
 
 ## Phase 48: NoMinMaxInfo rule list
 
@@ -128,6 +129,7 @@ Implemented:
 - Rule-list editor support.
 - Rule validation support.
 - Cursor diagnostics report `respectMinMaxInfo=<value>` and `minMaxInfo=blocked-by-rule` when matched.
+- Rule help panel includes safe examples.
 
 Why this matters:
 
@@ -140,12 +142,13 @@ Still missing:
 
 ## Phase 52: Per-monitor DPI snap audit
 
-Status: started.
+Status: in progress.
 
 Implemented:
 
 - `DpiSnapDiagnostics` writes `%LOCALAPPDATA%\RhaegarMove\dpi-snap.txt` when snap diagnostics are enabled.
-- The report includes window DPI, cursor point, monitor work area, before/after rectangle, and restore size/DPI/flags if present.
+- The report includes window DPI, monitor DPI, DPI delta, cursor point, monitor work area, before/after rectangle, and restore size/DPI/flags if present.
+- The report includes a restore-to-monitor scale estimate.
 - `dpi_snap_report.bat` prints the report.
 
 Why this matters:
@@ -155,20 +158,34 @@ Why this matters:
 
 Still missing:
 
-- Monitor DPI from the monitor handle itself, not only window DPI.
+- Physical monitor identity/name, not just DPI/work-area.
 
 ## Phase 53: Build verification helper
 
-Status: started.
+Status: in progress.
 
 Implemented:
 
 - `verify_build.bat` runs `build.bat` and verifies `dist\RhaegarMove.exe` exists.
 - CI artifacts include `verify_build.bat`.
+- GitHub Actions now runs `verify_build.bat` instead of only `build.bat`.
 
 Still missing:
 
 - A confirmed GitHub Actions workflow result or local Windows build result.
+
+## Phase 56: Settings rule help panel
+
+Status: started.
+
+Implemented:
+
+- `RuleHelpForm` documents simple lists, composite `process:title|class` rules, `SnapList`, `NoSizingNotify`, `NoResize`, and `NoMinMaxInfo`.
+- `RuleListForm` links to the rule help panel.
+
+Still missing:
+
+- Context-sensitive help that opens directly for the currently focused field.
 
 ## Next high-value quality work
 
@@ -176,7 +193,7 @@ Still missing:
    - Include hwnd/class/title of the snap target that won X/Y.
 2. **Build verification**
    - Confirm Windows build with GitHub Actions or local `verify_build.bat` before calling the app stable.
-3. **Per-monitor DPI source**
-   - Add monitor DPI via monitor handle where available.
-4. **Settings help panel**
-   - Show practical examples for `NoMinMaxInfo`, `SnapList`, and `NoResize`.
+3. **Physical monitor identity**
+   - Add monitor device/name where available.
+4. **Context-sensitive rule help**
+   - Open help directly for the focused rule field.
