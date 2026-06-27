@@ -52,6 +52,9 @@ namespace RhaegarMove
             b.AppendLine("[normalization notes]");
             AppendListOrNone(b, s.NormalizationNotes);
             b.AppendLine();
+            b.AppendLine("[rule validation]");
+            b.Append(RuleValidation.BuildReport());
+            b.AppendLine();
             b.AppendLine("[warnings]");
             AppendWarnings(b, s);
             return b.ToString();
@@ -61,7 +64,7 @@ namespace RhaegarMove
         {
             if (s.UnknownConfigKeys.Count > 0 || s.DuplicateConfigKeys.Count > 0 || s.NormalizationNotes.Count > 0)
                 return "config has unknown, duplicate, or normalized values";
-            if (s.StickyResize || s.EnablePreviewOverlay || s.EnablePreviewOnlySnap || s.EnableSnapDiagnostics || s.EnableRuleDiagnostics)
+            if (s.StickyResize || s.EnablePreviewOverlay || s.EnablePreviewOnlySnap || s.EnableSnapDiagnostics || s.EnableRuleDiagnostics || s.EnableTrayIcon)
                 return "advanced diagnostics/features enabled";
             return "safe defaults or normal options";
         }
@@ -120,9 +123,9 @@ namespace RhaegarMove
                 b.AppendLine("- MaxWidth/MaxHeight limits are active; some windows may stop resizing before the monitor edge.");
                 any = true;
             }
-            if (!s.EnableTrayIcon)
+            if (s.EnableTrayIcon)
             {
-                b.AppendLine("- Tray icon is disabled; reload/exit must use helper scripts or process tools.");
+                b.AppendLine("- Tray icon is enabled. Default UX is trayless; use it only if desired.");
                 any = true;
             }
             if (!any)
