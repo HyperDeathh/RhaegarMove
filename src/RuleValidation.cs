@@ -8,7 +8,11 @@ namespace RhaegarMove
     {
         public static string BuildReport()
         {
-            Dictionary<string, string> values = ConfigFileUpdater.ReadSectionValues("Blacklist");
+            return BuildReport(ConfigFileUpdater.ReadSectionValues("Blacklist"));
+        }
+
+        public static string BuildReport(Dictionary<string, string> values)
+        {
             StringBuilder b = new StringBuilder();
             bool any = false;
 
@@ -23,6 +27,12 @@ namespace RhaegarMove
             if (!any)
                 b.AppendLine("- none");
             return b.ToString();
+        }
+
+        public static bool HasWarnings(Dictionary<string, string> values)
+        {
+            string report = BuildReport(values).Trim();
+            return report.Length > 0 && report != "- none";
         }
 
         private static bool ValidateCsv(StringBuilder b, Dictionary<string, string> values, string key, bool composite)
@@ -45,6 +55,11 @@ namespace RhaegarMove
                 if (item.IndexOf('\t') >= 0)
                 {
                     b.AppendLine("- " + key + " contains a tab: " + item);
+                    any = true;
+                }
+                if (item.IndexOf("  ", StringComparison.Ordinal) >= 0)
+                {
+                    b.AppendLine("- " + key + " contains repeated spaces: " + item);
                     any = true;
                 }
                 if (composite)
