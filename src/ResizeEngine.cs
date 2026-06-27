@@ -13,6 +13,16 @@ namespace RhaegarMove
 
         public static readonly ResizeEdge None = new ResizeEdge();
 
+        public static ResizeEdge FromDelta(int dxLeft, int dxRight, int dyTop, int dyBottom)
+        {
+            ResizeEdge e = new ResizeEdge();
+            e.Left = dxLeft != 0;
+            e.Right = dxRight != 0;
+            e.Top = dyTop != 0;
+            e.Bottom = dyBottom != 0;
+            return e;
+        }
+
         public static ResizeEdge FromPoint(RECT rect, POINT pt, AppSettings settings)
         {
             ResizeEdge e = new ResizeEdge();
