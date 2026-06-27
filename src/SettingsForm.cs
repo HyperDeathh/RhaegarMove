@@ -19,6 +19,8 @@ namespace RhaegarMove
         private CheckBox enableEdgeSnap;
         private CheckBox enableAeroSnap;
         private CheckBox snapToWindows;
+        private CheckBox respectWindowMinMaxInfo;
+        private CheckBox allowCloakedWindows;
         private CheckBox enablePreviewOverlay;
         private CheckBox enablePreviewOnlySnap;
         private CheckBox enableRuleDiagnostics;
@@ -32,7 +34,7 @@ namespace RhaegarMove
             this.afterSave = afterSave;
             Text = "RhaegarMove Settings";
             StartPosition = FormStartPosition.CenterScreen;
-            Size = new Size(500, 760);
+            Size = new Size(520, 820);
             MinimizeBox = false;
             MaximizeBox = false;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -46,7 +48,7 @@ namespace RhaegarMove
             TableLayoutPanel root = new TableLayoutPanel();
             root.Dock = DockStyle.Fill;
             root.ColumnCount = 2;
-            root.RowCount = 26;
+            root.RowCount = 28;
             root.Padding = new Padding(12);
             root.AutoScroll = true;
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55));
@@ -64,6 +66,8 @@ namespace RhaegarMove
             enableEdgeSnap = AddCheck(root, "EnableEdgeSnap");
             enableAeroSnap = AddCheck(root, "EnableAeroSnap");
             snapToWindows = AddCheck(root, "SnapToWindows");
+            respectWindowMinMaxInfo = AddCheck(root, "RespectWindowMinMaxInfo");
+            allowCloakedWindows = AddCheck(root, "AllowCloakedWindows advanced");
             enablePreviewOverlay = AddCheck(root, "EnablePreviewOverlay");
             enablePreviewOnlySnap = AddCheck(root, "EnablePreviewOnlySnap");
             enableRuleDiagnostics = AddCheck(root, "EnableRuleDiagnostics");
@@ -96,7 +100,7 @@ namespace RhaegarMove
             warningLabel = new Label();
             warningLabel.AutoSize = true;
             warningLabel.Dock = DockStyle.Fill;
-            warningLabel.MaximumSize = new Size(440, 0);
+            warningLabel.MaximumSize = new Size(460, 0);
             root.Controls.Add(warningLabel, 0, root.RowCount - 5);
             root.SetColumnSpan(warningLabel, 2);
 
@@ -156,6 +160,8 @@ namespace RhaegarMove
             enableEdgeSnap.Checked = s.EnableEdgeSnap;
             enableAeroSnap.Checked = s.EnableAeroSnap;
             snapToWindows.Checked = s.SnapToWindows;
+            respectWindowMinMaxInfo.Checked = s.RespectWindowMinMaxInfo;
+            allowCloakedWindows.Checked = s.AllowCloakedWindows;
             enablePreviewOverlay.Checked = s.EnablePreviewOverlay;
             enablePreviewOnlySnap.Checked = s.EnablePreviewOnlySnap;
             enableRuleDiagnostics.Checked = s.EnableRuleDiagnostics;
@@ -170,6 +176,8 @@ namespace RhaegarMove
             StringBuilder b = new StringBuilder();
             if (snapThreshold != null && snapThreshold.Value == 0) b.AppendLine("- SnapThreshold=0 makes practical snap matching nearly disabled.");
             if (snapThreshold != null && snapThreshold.Value > 64) b.AppendLine("- High SnapThreshold may feel too sticky.");
+            if (respectWindowMinMaxInfo != null && !respectWindowMinMaxInfo.Checked) b.AppendLine("- Disabling native min/max can let apps resize past their own limits.");
+            if (allowCloakedWindows != null && allowCloakedWindows.Checked) b.AppendLine("- AllowCloakedWindows can target hidden UWP/virtual-desktop surfaces.");
             if (stickyResize != null && stickyResize.Checked) b.AppendLine("- StickyResize can resize adjacent windows too.");
             if (enablePreviewOnlySnap != null && enablePreviewOnlySnap.Checked) b.AppendLine("- PreviewOnlySnap delays movement until mouse release.");
             if (enablePreviewOverlay != null && enablePreviewOverlay.Checked) b.AppendLine("- PreviewOverlay shows a topmost outline window.");
@@ -217,6 +225,8 @@ namespace RhaegarMove
             values["EnableEdgeSnap"] = enableEdgeSnap.Checked.ToString().ToLowerInvariant();
             values["EnableAeroSnap"] = enableAeroSnap.Checked.ToString().ToLowerInvariant();
             values["SnapToWindows"] = snapToWindows.Checked.ToString().ToLowerInvariant();
+            values["RespectWindowMinMaxInfo"] = respectWindowMinMaxInfo.Checked.ToString().ToLowerInvariant();
+            values["AllowCloakedWindows"] = allowCloakedWindows.Checked.ToString().ToLowerInvariant();
             values["EnablePreviewOverlay"] = enablePreviewOverlay.Checked.ToString().ToLowerInvariant();
             values["EnablePreviewOnlySnap"] = enablePreviewOnlySnap.Checked.ToString().ToLowerInvariant();
             values["EnableRuleDiagnostics"] = enableRuleDiagnostics.Checked.ToString().ToLowerInvariant();
