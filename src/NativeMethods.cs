@@ -71,6 +71,16 @@ namespace RhaegarMove
         public uint dwFlags;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MINMAXINFO
+    {
+        public POINT ptReserved;
+        public POINT ptMaxSize;
+        public POINT ptMaxPosition;
+        public POINT ptMinTrackSize;
+        public POINT ptMaxTrackSize;
+    }
+
     internal delegate IntPtr LowLevelProc(int nCode, IntPtr wParam, IntPtr lParam);
     internal delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
@@ -95,6 +105,7 @@ namespace RhaegarMove
         public const int SW_RESTORE = 9;
         public const int SW_MAXIMIZE = 3;
 
+        public const uint WM_GETMINMAXINFO = 0x0024;
         public const uint WM_ENTERSIZEMOVE = 0x0231;
         public const uint WM_EXITSIZEMOVE = 0x0232;
         public const uint WM_SIZING = 0x0214;
@@ -193,6 +204,9 @@ namespace RhaegarMove
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint msg, IntPtr wParam, ref RECT lParam, uint flags, uint timeout, out IntPtr result);
 
+        [DllImport("user32.dll", SetLastError = true, EntryPoint = "SendMessageTimeout")]
+        public static extern IntPtr SendMessageTimeoutPtr(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam, uint flags, uint timeout, out IntPtr result);
+
         [DllImport("user32.dll")]
         public static extern IntPtr MonitorFromPoint(POINT pt, uint flags);
 
@@ -202,7 +216,7 @@ namespace RhaegarMove
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
 
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", SetLastError = true)]
         public static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
 
         [DllImport("dwmapi.dll")]
