@@ -20,22 +20,6 @@ A global keyboard hook is easy to get wrong. If Alt key-up or injected-key state
 - Swallow only the mouse down/move/up events that belong to an active RhaegarMove gesture.
 - If Alt is released during a gesture, finish the operation and swallow the matching mouse-up once.
 
-## Lessons taken from studying AltSnap's architecture
-
-These are high-level lessons only, not copied code:
-
-- Use a clear state machine for input gestures.
-- Keep hook callbacks small and exception-safe.
-- Notify target windows with move/size start and end messages.
-- Send sizing messages during resize so apps can constrain their own size.
-- Keep restore/maximized behavior conservative.
-- Add watchdog cleanup so a lost input event does not leave the app in a bad state.
-- Coalesce mouse-move work outside of the hook callback.
-- Store snapped-window restore metadata so dragging a snapped window can restore to a sensible size.
-- Keep window rules data-driven so fragile shell/app surfaces can be excluded without code changes.
-- Marshal UI preview work back to the WinForms UI thread.
-- Runtime control should go through explicit, simple signals rather than hidden behavior.
-
 ## Current source layout
 
 The source is modular:
@@ -43,14 +27,14 @@ The source is modular:
 - `RhaegarMove.cs`: app entry, single-instance guard, watchdog lifecycle, runtime command routing, reload/exit control processing.
 - `NativeMethods.cs`: Win32 constants, structs, delegates, and P/Invoke declarations.
 - `MouseHook.cs`: low-level mouse hook coordinator.
-- `OperationWorker.cs`: coalesces mouse-move operations outside the hook callback.
+- `OperationWorker.cs`: coalesces mouse-move operations outside the hook callback and supports preview-only commit mode.
 - `WindowController.cs`: target validation, fullscreen/maximized checks, sizing notifications.
 - `WindowRules.cs`: clean-room process/class/title and composite window rule matching, with reload support.
 - `Geometry.cs`: DWM bounds, monitor work area, input state helpers.
 - `DpiHelper.cs`: DPI lookup and restore-size scaling helpers.
 - `ResizeEngine.cs`: resize-region selection and rectangle calculation.
 - `SizingConstraints.cs`: config-based min/max size clamping.
-- `ConfigValidation.cs`: startup/reload config validation and warning report.
+- `ConfigValidation.cs`: startup/reload config validation, unknown-key, and normalization report.
 - `RuleDiagnostics.cs`: rule decision snapshots for debugging.
 - `RuntimeCommands.cs`: command-line diagnostics and runtime control helpers.
 - `RuntimeControl.cs`: file-based reload and exit request markers.
@@ -61,7 +45,7 @@ The source is modular:
 - `PreviewOverlay.cs`: optional transparent outline overlay, disabled by default.
 - `SnapEngine.cs`: monitor snapping, Aero-style snapping, window-edge snapping, sticky resize basics, snap target diagnostics, and per-edge scoring diagnostics.
 - `WindowRestoreStore.cs`: SetProp/GetProp restore metadata with an in-process fallback dictionary.
-- `AppSettings.cs`: typed INI option loader with in-place reload.
+- `AppSettings.cs`: typed INI option loader with in-place reload and config issue tracking.
 
 `build.bat` compiles `src\*.cs` directly. It does not depend on generated source preparation.
 
@@ -111,7 +95,6 @@ Status: in progress.
 Status: planned and constrained.
 
 - Keyboard hook is intentionally not added yet.
-- Phase 5 input safety document exists.
 - Future keyboard work requires a documented external stop path and Alt-up reset plan.
 
 ### Phase 6: UX layer
@@ -135,7 +118,6 @@ Status: done for the active build.
 - `src/RhaegarMove.cs` is now a small app entry file.
 - Main logic has been split into focused source files.
 - `build.bat` compiles `src\*.cs` directly.
-- `tools/Prepare-Source.ps1` is no longer called by the build.
 
 ### Phase 8: operation worker and state machine
 
@@ -203,7 +185,6 @@ Status: in progress.
 Still missing:
 
 - Smarter neighbor selection when multiple windows touch the same edge.
-- Protection against tiny adjacent windows being over-shrunk beyond their app-specific constraints.
 
 ### Phase 13: min/max sizing
 
@@ -215,7 +196,7 @@ Status: in progress.
 
 Still missing:
 
-- Native app-specific `WM_GETMINMAXINFO` querying. The first interop attempt was blocked by tooling, so this remains a later isolated task.
+- Native app-specific `WM_GETMINMAXINFO` querying.
 
 ### Phase 14: rule diagnostics
 
@@ -223,7 +204,6 @@ Status: in progress.
 
 - `RuleDiagnostics` can write a decision snapshot to `%LOCALAPPDATA%\RhaegarMove\rules.txt`.
 - `EnableRuleDiagnostics=false` by default.
-- Gesture start can write class/title and ignore/snap/resize decisions for the selected window.
 - Diagnostics include matched rule explanations such as `Classes:...`, `Rules:...`, `SnapList:...`, `NoResize:...`.
 - `diagnose_cursor.bat` can dump the rule decision for the window under the cursor.
 
@@ -251,7 +231,6 @@ Status: in progress.
 
 Still missing:
 
-- Preview-only mode that commits snap only on mouse release.
 - Custom colors/thickness.
 
 ### Phase 17: runtime control
@@ -261,7 +240,7 @@ Status: in progress.
 - `RuntimeCommands` routes diagnostic commands before starting the main hook app.
 - Supported commands: `--status`, `--config-path`, `--diagnose-cursor`, `--preview-status`, `--reload`, and `--request-exit`.
 - Runtime command output is persisted to `%LOCALAPPDATA%\RhaegarMove\runtime.txt` so it works with a `winexe` build.
-- `status.bat`, `diagnose_cursor.bat`, `preview_status.bat`, `reload.bat`, and `request_exit.bat` read back runtime output.
+- Runtime helper scripts read back runtime output.
 - Reload and exit requests use simple files in `%LOCALAPPDATA%\RhaegarMove`.
 
 Still missing:
@@ -317,20 +296,15 @@ Status: in progress.
 
 ### Phase 22: config validation report
 
-Status: started.
+Status: in progress.
 
 - `ConfigValidation` writes `%LOCALAPPDATA%\RhaegarMove\config-report.txt` at startup and reload.
 - The report includes normalized values and warnings for advanced/risky options.
 - `config_report.bat` displays the last config report.
 
-Still missing:
-
-- Exact raw-to-normalized value diff for each config line.
-- Unknown-key warnings.
-
 ### Phase 23: stronger runtime control watcher
 
-Status: started.
+Status: in progress.
 
 - `RuntimeWatcher` uses `FileSystemWatcher` to notice `reload.request` and `exit.request` files.
 - The app loop still consumes marker files as fallback, so missed watcher events do not break control.
@@ -343,18 +317,55 @@ Still missing:
 
 ### Phase 24: per-edge snap scoring diagnostics
 
-Status: started.
+Status: in progress.
 
 - `SnapScoreDiagnostics` writes `%LOCALAPPDATA%\RhaegarMove\snap-score.txt` when `EnableSnapDiagnostics=true`.
 - Move snap scoring records candidate edge labels, delta, absolute distance, threshold membership, and best candidate.
 - Resize snap scoring records candidate edges for the active resize side.
 - `snap_score.bat` displays the last snap score report.
 
+### Phase 25: unknown-key config validation
+
+Status: started.
+
+- `AppSettings` tracks unknown config keys and malformed key/value lines.
+- Invalid integer/boolean values are recorded as normalization notes with their fallback value.
+- Clamped numeric values are recorded as raw-to-normalized notes such as `SnapGap: 999 -> 127`.
+- `ConfigValidation` includes `[unknown keys]` and `[normalization notes]` sections.
+
 Still missing:
 
-- Separate X/Y best candidates in the summary.
-- Scoring for monitor-edge snap candidates.
-- More detailed final snap decision explanation after all transforms.
+- Section-specific unknown-key reporting.
+- Duplicate-key warnings.
+
+### Phase 26: monitor-edge scoring
+
+Status: started.
+
+- `SnapScoreDiagnostics.BeginSession` clears the report once per gesture and appends multiple sections.
+- Move monitor/workarea edges are scored as `monitor-left`, `monitor-top`, `monitor-right`, and `monitor-bottom`.
+- Resize monitor/workarea edges are scored for the active resize side.
+- Window-edge scoring still runs after monitor-edge scoring and appends to the same report.
+
+Still missing:
+
+- Separate X/Y best summaries.
+- Final post-transform decision line.
+
+### Phase 27: preview-only snap mode
+
+Status: started.
+
+- `EnablePreviewOnlySnap=false` by default.
+- When enabled, worker records the calculated rectangle as pending instead of moving/resizing immediately.
+- The pending rectangle is committed on mouse release or watchdog finish.
+- Cancel discards the pending rectangle.
+- Overlay/preview state can show the pending rectangle before commit.
+
+Still missing:
+
+- Differentiating snap-only preview from normal move preview.
+- Sticky resize commit support in preview-only mode.
 
 ## Safety checklist before testing
 
@@ -366,4 +377,4 @@ Still missing:
 
 ## Known current status
 
-RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code is now modular and has the correct direction: worker boundary, restore metadata, snap-to-window basics, advanced rules, DPI-aware restore, sticky resize infrastructure, config-based min/max sizing, runtime diagnostics, optional UI-thread-safe preview overlay, config reload, safe exit request, snap target diagnostics, config validation reports, runtime watcher support, and per-edge snap scoring diagnostics. The next high-value area is unknown-key config validation, monitor-edge scoring, and a real local control channel.
+RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code is now modular and has the correct direction: worker boundary, restore metadata, snap-to-window basics, advanced rules, DPI-aware restore, sticky resize infrastructure, config-based min/max sizing, runtime diagnostics, optional UI-thread-safe preview overlay, config reload, safe exit request, snap target diagnostics, config validation reports, runtime watcher support, per-edge snap scoring diagnostics, unknown-key reporting, monitor-edge scoring, and preview-only commit mode. The next high-value area is duplicate-key config reporting, final snap decision summaries, and tray/config UX.
