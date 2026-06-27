@@ -1,0 +1,31 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build RhaegarMove
+        shell: cmd
+        run: build.bat
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: RhaegarMove-windows-x64
+          path: |
+            dist/RhaegarMove.exe
+            RhaegarMove.ini
+            install.bat
+            uninstall.bat
+            stop.bat
+          if-no-files-found: error
