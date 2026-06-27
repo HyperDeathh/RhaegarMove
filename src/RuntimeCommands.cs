@@ -60,7 +60,7 @@ namespace RhaegarMove
 
         private static void WriteStatus()
         {
-            bool running = Process.GetProcessesByName("RhaegarMove").Length > 0;
+            bool running = IsMainInstanceRunning();
             AppSettings settings = AppSettings.Load();
             string local = RuntimeControl.ControlDir;
             string text =
@@ -88,6 +88,25 @@ namespace RhaegarMove
                 "exitRequest=" + RuntimeControl.ExitRequestPath + Environment.NewLine +
                 "exitRequestPending=" + File.Exists(RuntimeControl.ExitRequestPath) + Environment.NewLine;
             RuntimeControl.WriteRuntime(text);
+        }
+
+        private static bool IsMainInstanceRunning()
+        {
+            int currentId = Process.GetCurrentProcess().Id;
+            Process[] processes = Process.GetProcessesByName("RhaegarMove");
+            for (int i = 0; i < processes.Length; i++)
+            {
+                try
+                {
+                    if (processes[i].Id != currentId)
+                        return true;
+                }
+                finally
+                {
+                    processes[i].Dispose();
+                }
+            }
+            return false;
         }
 
         private static string LastWrite(string path)
