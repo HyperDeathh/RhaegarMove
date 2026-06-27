@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace RhaegarMove
@@ -24,9 +25,27 @@ namespace RhaegarMove
             if (hook != IntPtr.Zero)
                 return;
 
-            hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_MOUSE_LL, proc, IntPtr.Zero, 0);
+            IntPtr module = IntPtr.Zero;
+            try
+            {
+                using (Process current = Process.GetCurrentProcess())
+                using (ProcessModule main = current.MainModule)
+                    module = NativeMethods.GetModuleHandle(main.ModuleName);
+            }
+            catch
+            {
+                module = IntPtr.Zero;
+            }
+
+            hook = NativeMethods.SetWindowsHookEx(NativeMethods.WH_MOUSE_LL, proc, module, 0);
             if (hook == IntPtr.Zero)
-                throw new InvalidOperationException("Mouse hook could not be installed.");
+            {
+                int error = Marshal.GetLastWin32Error();
+                RuntimeControl.WriteRuntime("mouse hook install failed. error=" + error);
+                throw new InvalidOperationException("Mouse hook could not be installed. Win32Error=" + error);
+            }
+
+            RuntimeControl.WriteRuntime("mouse hook installed " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
 
         private IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam)
@@ -83,8 +102,9 @@ namespace RhaegarMove
 
                 return NativeMethods.CallNextHookEx(hook, nCode, wParam, lParam);
             }
-            catch
+            catch (Exception ex)
             {
+                RuntimeControl.WriteRuntime("hook callback error: " + ex.GetType().Name + " " + ex.Message);
                 worker.Cancel();
                 return NativeMethods.CallNextHookEx(hook, nCode, wParam, lParam);
             }
@@ -94,7 +114,10 @@ namespace RhaegarMove
         {
             IntPtr target = WindowController.FindTargetWindow(pt, settings);
             if (target == IntPtr.Zero)
+            {
+                RuntimeControl.WriteRuntime("gesture ignored: no target at " + pt.x + "," + pt.y);
                 return false;
+            }
 
             if (settings.EnableRuleDiagnostics)
                 RuleDiagnostics.WriteSnapshot(kind.ToString(), target);
@@ -103,10 +126,16 @@ namespace RhaegarMove
             {
                 string cls = Geometry.ClassName(target);
                 if (!WindowRules.ShouldAllowResize(target, cls))
+                {
+                    RuntimeControl.WriteRuntime("resize ignored by NoResize rule: " + Geometry.ClassName(target));
                     return false;
+                }
             }
 
-            return worker.Begin(target, button, kind, pt);
+            bool started = worker.Begin(target, button, kind, pt);
+            if (!started)
+                RuntimeControl.WriteRuntime("gesture begin failed: " + kind + " hwnd=" + target.ToInt64().ToString("X"));
+            return started;
         }
 
         private static MouseButton UpButtonFromMessage(int msg)
