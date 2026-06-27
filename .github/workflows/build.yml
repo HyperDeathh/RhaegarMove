@@ -28,4 +28,6 @@ jobs:
             install.bat
             uninstall.bat
             stop.bat
+            status.bat
+            open_config.bat
           if-no-files-found: error
