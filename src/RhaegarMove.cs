@@ -1,12 +1,11 @@
 using System;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace RhaegarMove
 {
     internal static class Program
     {
-        private static Mutex singleInstance;
+        private static System.Threading.Mutex singleInstance;
         private static AppSettings settings;
         private static OperationWorker worker;
         private static MouseHook mouseHook;
@@ -16,7 +15,7 @@ namespace RhaegarMove
         private static void Main()
         {
             bool created;
-            singleInstance = new Mutex(true, "Local\\RhaegarMove", out created);
+            singleInstance = new System.Threading.Mutex(true, "Local\\RhaegarMove", out created);
             if (!created)
                 return;
 
