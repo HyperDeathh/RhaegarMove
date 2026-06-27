@@ -19,10 +19,8 @@ if not exist dist mkdir dist
 if not exist build mkdir build
 
 set "TMP_SRC=build\RhaegarMove.generated.cs"
-copy /Y "src\RhaegarMove.cs" "%TMP_SRC%" >nul
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$p='%TMP_SRC%'; $s=[IO.File]::ReadAllText($p); $s=$s.Replace('private readonly Timer watchdog;', 'private readonly System.Windows.Forms.Timer watchdog;'); $s=$s.Replace('watchdog = new Timer();', 'watchdog = new System.Windows.Forms.Timer();'); $s=$s.Replace('private enum Operation { None, Move, Resize }', 'private enum OperationKind { None, Move, Resize }'); $s=$s.Replace('Operation.Move', 'OperationKind.Move'); $s=$s.Replace('Operation.Resize', 'OperationKind.Resize'); $s=$s.Replace('Operation.None', 'OperationKind.None'); $s=$s.Replace('public Operation Operation;', 'public OperationKind Kind;'); $s=$s.Replace('state.Operation', 'state.Kind'); $s=$s.Replace('RECT desired = new RECT(left, top, right, bottom);', 'RECT desired = new RECT(); desired.left = left; desired.top = top; desired.right = right; desired.bottom = bottom;'); $s=$s.Replace('if (cls == \"Progman\" || cls == \"WorkerW\" || cls == \"Shell_TrayWnd\" || cls == \"Shell_SecondaryTrayWnd\" || cls == \"Button\" || cls == \"#32768\")', 'if (WindowRules.ShouldIgnoreWindow(hwnd, cls))'); [IO.File]::WriteAllText($p, $s, [Text.UTF8Encoding]::new($false))"
+powershell -NoProfile -ExecutionPolicy Bypass -File "tools\Prepare-Source.ps1" -InputPath "src\RhaegarMove.cs" -OutputPath "%TMP_SRC%"
 if errorlevel 1 (
   echo [RhaegarMove] Gecici kaynak dosyasi hazirlanamadi.
   exit /b 1
