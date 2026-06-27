@@ -32,6 +32,7 @@ These are high-level lessons only, not copied code:
 - Add watchdog cleanup so a lost input event does not leave the app in a bad state.
 - Coalesce mouse-move work outside of the hook callback.
 - Store snapped-window restore metadata so dragging a snapped window can restore to a sensible size.
+- Keep window rules data-driven so fragile shell/app surfaces can be excluded without code changes.
 
 ## Current source layout
 
@@ -42,41 +43,15 @@ The source is now modular:
 - `MouseHook.cs`: low-level mouse hook coordinator.
 - `OperationWorker.cs`: coalesces mouse-move operations outside the hook callback.
 - `WindowController.cs`: target validation, fullscreen/maximized checks, sizing notifications.
-- `WindowRules.cs`: clean-room process/class/title blacklist matching.
+- `WindowRules.cs`: clean-room process/class/title and composite window rule matching.
 - `Geometry.cs`: DWM bounds, monitor work area, input state helpers.
+- `DpiHelper.cs`: DPI lookup and restore-size scaling helpers.
 - `ResizeEngine.cs`: resize-region selection and rectangle calculation.
-- `SnapEngine.cs`: monitor snapping, Aero-style snapping, and window-edge snapping.
+- `SnapEngine.cs`: monitor snapping, Aero-style snapping, window-edge snapping, and sticky resize basics.
 - `WindowRestoreStore.cs`: SetProp/GetProp restore metadata with an in-process fallback dictionary.
 - `AppSettings.cs`: typed INI option loader.
 
-`build.bat` now compiles `src\*.cs` directly. It no longer depends on generated source preparation.
-
-## Additional AltSnap study notes
-
-AltSnap is not just an Alt-drag loop. The repository separates responsibilities across multiple layers:
-
-- `altsnap.c`: app lifetime, config path resolution, single-instance behavior, tray commands, hook DLL loading, update/reload messages.
-- `hooks.h`: shared constants, app names, private messages, action IDs, action metadata, and hotkey helpers.
-- `hooks.c`: input state machine, low-level keyboard and mouse processing, movement and resize state, snapping, worker-thread dispatch, blacklist checks, and action execution.
-- `snap.c`: restore metadata for snapped/maximized windows using window properties, plus fallback storage for special windows.
-- `zones.c`: user-defined snap layouts, grid zones, nearest-zone logic, preview window behavior, and layout switching.
-- `tray.c`: notification icon lifecycle, explorer/taskbar recovery, context menu, and zone layout commands.
-- `config.c`: settings UI, autostart, elevation, blacklist editor, and option persistence.
-- `unfuck.h`: dynamic Windows API compatibility wrappers, monitor/DWM/DPI fallbacks, logging, and old OS support helpers.
-- `AltSnap.dni`: default behavior matrix. Many quality decisions live in configuration, not only in code.
-
-Important features RhaegarMove does not have yet:
-
-- Full keyboard hook state machine.
-- `ignorekey` / `ignoreclick` style sent-input guards.
-- `blockaltup` / end-key behavior.
-- Advanced `process:title|class` blacklist format.
-- DPI-aware restore scaling.
-- Zone layout support.
-- MDI window support.
-- Transparent outline or hollow-drag mode.
-- Tray/config UI.
-- Runtime config reload command.
+`build.bat` compiles `src\*.cs` directly. It does not depend on generated source preparation.
 
 ## Roadmap toward AltSnap-level quality
 
@@ -95,10 +70,6 @@ Status: in progress.
 - Basic process/class/title blacklist exists.
 - DWM extended-frame bounds are used by the geometry layer.
 - Per-monitor work-area handling is used by snapping helpers.
-
-Still missing:
-
-- More complete `process:title|class` matching.
 
 ### Phase 3: snapping
 
@@ -126,7 +97,6 @@ Status: in progress.
 Still missing:
 
 - More complete min/max sizing behavior.
-- Per-app resize allow/deny lists.
 
 ### Phase 5: optional advanced input
 
@@ -164,12 +134,13 @@ Note: the retired script file may still exist in the repository if GitHub conten
 
 ### Phase 8: operation worker and state machine
 
-Status: started.
+Status: in progress.
 
-- Mouse hook now delegates movement to `OperationWorker`.
+- Mouse hook delegates movement to `OperationWorker`.
 - Mouse move events are coalesced through a worker thread.
 - The hook callback no longer performs the heavy move/resize work directly.
 - Watchdog cleanup still exists.
+- The worker tracks the last rectangle so resize side effects can be calculated safely.
 
 Still missing:
 
@@ -178,18 +149,58 @@ Still missing:
 
 ### Phase 9: restore metadata and window snap
 
-Status: started.
+Status: in progress.
 
 - `WindowRestoreStore` stores snapped-window restore size and flags with `SetProp/GetProp` plus fallback storage.
 - Aero snap writes restore metadata before snapping.
 - Dragging a snapped/maximized window uses restore metadata when available.
-- `SnapEngine` now collects other top-level windows and supports basic edge-to-window snapping.
+- `SnapEngine` collects other top-level windows and supports basic edge-to-window snapping.
 
 Still missing:
 
-- DPI-aware restore scaling.
 - FancyZones compatibility.
-- Sticky resize of adjacent snapped windows.
+
+### Phase 10: advanced window rules
+
+Status: started.
+
+- `WindowRules` supports composite `process:title|class` rules.
+- `Rules` can block fragile windows.
+- `SnapList` can act as a snap target allow-list.
+- `NoSizingNotify` can suppress move/size start/end notifications for matching windows.
+- `NoResize` can block right-button resize on matching windows.
+
+Still missing:
+
+- Dedicated per-action allow/deny lists for every future action.
+- UI or command to inspect the rule that matched a window.
+
+### Phase 11: DPI-aware restore
+
+Status: started.
+
+- `DpiHelper` reads per-window DPI when available.
+- Restore metadata now stores the DPI used when the restore size was captured.
+- Restore size is scaled when dragging a snapped/maximized window on a monitor with different DPI.
+
+Still missing:
+
+- Monitor-DPI fallback for older Windows versions.
+- DPI-aware placement policy for mixed-DPI multi-monitor setups.
+
+### Phase 12: smart snap and sticky resize
+
+Status: started.
+
+- `StickyResize` setting exists and is disabled by default.
+- `SnapEngine.ApplyStickyResize` can adjust adjacent snap targets when the active window is resized.
+- Worker now passes previous/current rectangles to the sticky resize path.
+
+Still missing:
+
+- Smarter neighbor selection when multiple windows touch the same edge.
+- Protection against tiny adjacent windows being over-shrunk beyond their app-specific constraints.
+- Preview outline before committing smart/sticky changes.
 
 ## Safety checklist before testing
 
@@ -201,4 +212,4 @@ Still missing:
 
 ## Known current status
 
-RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code now has the correct direction for a maintainable implementation: modular source, a worker boundary, restore metadata, and snap-to-window basics. The next high-value area is more complete blacklist matching and more precise restore/DPI behavior.
+RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code is now modular and has the correct direction: worker boundary, restore metadata, snap-to-window basics, advanced rules, DPI-aware restore, and sticky resize infrastructure. The next high-value area is min/max sizing, rule diagnostics, and optional preview/outline behavior.
