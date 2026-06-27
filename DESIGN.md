@@ -31,6 +31,81 @@ These are high-level lessons only, not copied code:
 - Keep restore/maximized behavior conservative.
 - Add watchdog cleanup so a lost input event does not leave the app in a bad state.
 
+## Additional AltSnap study notes
+
+AltSnap is not just an Alt-drag loop. The repository separates responsibilities across multiple layers:
+
+- `altsnap.c`: app lifetime, config path resolution, single-instance behavior, tray commands, hook DLL loading, update/reload messages.
+- `hooks.h`: shared constants, app names, private messages, action IDs, action metadata, and hotkey helpers.
+- `hooks.c`: input state machine, low-level keyboard and mouse processing, movement and resize state, snapping, worker-thread dispatch, blacklist checks, and action execution.
+- `snap.c`: restore metadata for snapped/maximized windows using window properties, plus fallback storage for special windows.
+- `zones.c`: user-defined snap layouts, grid zones, nearest-zone logic, preview window behavior, and layout switching.
+- `tray.c`: notification icon lifecycle, explorer/taskbar recovery, context menu, and zone layout commands.
+- `config.c`: settings UI, autostart, elevation, blacklist editor, and option persistence.
+- `unfuck.h`: dynamic Windows API compatibility wrappers, monitor/DWM/DPI fallbacks, logging, and old OS support helpers.
+- `AltSnap.dni`: default behavior matrix. Many quality decisions live in configuration, not only in code.
+
+Important features RhaegarMove does not have yet:
+
+- Full keyboard hook state machine.
+- `ignorekey` / `ignoreclick` style sent-input guards.
+- `blockaltup` / end-key behavior.
+- Advanced blacklist format by process, title, and class.
+- DWM extended-frame / invisible-border correction.
+- DPI-aware restore sizing.
+- Full Aero snap and quarter snap.
+- Snap-to-other-windows.
+- Smart restore metadata for snapped windows.
+- Zone layout support.
+- MDI window support.
+- Transparent outline or hollow-drag mode.
+- Tray/config UI.
+- Worker thread for coalescing mouse move messages.
+
+## Roadmap toward AltSnap-level quality
+
+### Phase 1: stable minimal core
+
+- Build must succeed from a clean clone.
+- Manual run must be safe before installing as startup.
+- `stop.bat` and `uninstall.bat` must always work.
+- Test with Notepad, Explorer, Terminal, browser windows, and admin windows.
+
+### Phase 2: window targeting and geometry correctness
+
+- Add better target filtering by class and process name.
+- Add a blacklist file with process/class/title matching.
+- Add DWM extended-frame bounds handling.
+- Add maximized and snapped restore metadata.
+- Add per-monitor work-area handling.
+
+### Phase 3: snapping
+
+- Add monitor-edge snap.
+- Add left/right/top/corner Aero-style snap.
+- Add snap-to-other-windows.
+- Add speed threshold to avoid accidental snap while moving quickly.
+
+### Phase 4: resize quality
+
+- Add side/center resize regions.
+- Add optional center resize mode.
+- Respect min/max sizing more carefully.
+- Keep sending sizing notifications during resize.
+
+### Phase 5: optional advanced input
+
+- Only consider a keyboard hook after v0.1 is stable.
+- If a keyboard hook is added, it must include explicit Alt-up handling, emergency cancel, sent-input ignore counters, and a documented failure plan.
+- Avoid synthetic keys unless there is no safer approach.
+
+### Phase 6: UX layer
+
+- Optional tray icon.
+- Optional config UI.
+- Portable config fallback.
+- Clear logs for debugging.
+
 ## Safety checklist before testing
 
 1. Open Task Manager before running the app.
