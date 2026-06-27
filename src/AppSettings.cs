@@ -29,11 +29,13 @@ namespace RhaegarMove
         public bool EnablePreviewState = false;
         public bool EnablePreviewOverlay = false;
         public bool EnablePreviewOnlySnap = false;
+        public bool EnableTrayIcon = true;
         public bool AllowFullScreenWindows = false;
         public bool SkipMaximizedWindows = false;
         public bool NotifyMoveSizeEvents = true;
 
         public readonly List<string> UnknownConfigKeys = new List<string>();
+        public readonly List<string> DuplicateConfigKeys = new List<string>();
         public readonly List<string> NormalizationNotes = new List<string>();
 
         public static AppSettings Load()
@@ -41,6 +43,8 @@ namespace RhaegarMove
             AppSettings s = new AppSettings();
             string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RhaegarMove.ini");
             if (!File.Exists(path)) return s.Normalize();
+
+            Dictionary<string, int> seen = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             foreach (string raw in File.ReadAllLines(path))
             {
                 string line = raw.Trim();
@@ -53,6 +57,14 @@ namespace RhaegarMove
                 }
                 string key = line.Substring(0, eq).Trim();
                 string value = line.Substring(eq + 1).Trim();
+
+                int count;
+                seen.TryGetValue(key, out count);
+                count++;
+                seen[key] = count;
+                if (count > 1)
+                    s.DuplicateConfigKeys.Add(key + " occurrence " + count + " overrides previous value with '" + value + "'");
+
                 if (!s.Apply(key, value))
                     s.UnknownConfigKeys.Add(key + "=" + value);
             }
@@ -90,12 +102,15 @@ namespace RhaegarMove
             EnablePreviewState = s.EnablePreviewState;
             EnablePreviewOverlay = s.EnablePreviewOverlay;
             EnablePreviewOnlySnap = s.EnablePreviewOnlySnap;
+            EnableTrayIcon = s.EnableTrayIcon;
             AllowFullScreenWindows = s.AllowFullScreenWindows;
             SkipMaximizedWindows = s.SkipMaximizedWindows;
             NotifyMoveSizeEvents = s.NotifyMoveSizeEvents;
 
             UnknownConfigKeys.Clear();
             UnknownConfigKeys.AddRange(s.UnknownConfigKeys);
+            DuplicateConfigKeys.Clear();
+            DuplicateConfigKeys.AddRange(s.DuplicateConfigKeys);
             NormalizationNotes.Clear();
             NormalizationNotes.AddRange(s.NormalizationNotes);
         }
@@ -125,6 +140,7 @@ namespace RhaegarMove
             else if (key.Equals("EnablePreviewState", StringComparison.OrdinalIgnoreCase)) EnablePreviewState = ToBool(key, value, EnablePreviewState);
             else if (key.Equals("EnablePreviewOverlay", StringComparison.OrdinalIgnoreCase)) EnablePreviewOverlay = ToBool(key, value, EnablePreviewOverlay);
             else if (key.Equals("EnablePreviewOnlySnap", StringComparison.OrdinalIgnoreCase)) EnablePreviewOnlySnap = ToBool(key, value, EnablePreviewOnlySnap);
+            else if (key.Equals("EnableTrayIcon", StringComparison.OrdinalIgnoreCase)) EnableTrayIcon = ToBool(key, value, EnableTrayIcon);
             else if (key.Equals("AllowFullScreenWindows", StringComparison.OrdinalIgnoreCase)) AllowFullScreenWindows = ToBool(key, value, AllowFullScreenWindows);
             else if (key.Equals("SkipMaximizedWindows", StringComparison.OrdinalIgnoreCase)) SkipMaximizedWindows = ToBool(key, value, SkipMaximizedWindows);
             else if (key.Equals("NotifyMoveSizeEvents", StringComparison.OrdinalIgnoreCase)) NotifyMoveSizeEvents = ToBool(key, value, NotifyMoveSizeEvents);
