@@ -35,7 +35,7 @@ namespace RhaegarMove
                     if (settings.EnableSnapDiagnostics)
                     {
                         SnapScoreDiagnostics.BeginSession(settings, "move-aero");
-                        SnapScoreDiagnostics.FinalDecision(settings, "move-aero", before, new RECT(x, y, x + width, y + height));
+                        SnapScoreDiagnostics.FinalDecision(settings, "move-aero", "aero", before, new RECT(x, y, x + width, y + height));
                     }
                     return true;
                 }
@@ -48,11 +48,15 @@ namespace RhaegarMove
             RECT desired = before;
             int threshold = Math.Max(0, settings.SnapThreshold);
             SnapToMonitorEdges(ref desired, pt, threshold, settings.SnapGap, settings);
+            bool monitorChanged = !SameRect(before, desired);
+            RECT afterMonitor = desired;
 
+            bool windowChanged = false;
             if (settings.SnapToWindows && settings.AutoSnap >= 2)
             {
                 List<SnapTarget> targets = CollectTargets(hwnd, settings);
                 SnapToWindowEdges(ref desired, targets, threshold, settings.SnapGap, settings.AutoSnap >= 3, settings);
+                windowChanged = !SameRect(afterMonitor, desired);
             }
 
             if (desired.left != x || desired.top != y)
@@ -62,7 +66,7 @@ namespace RhaegarMove
                 changed = true;
             }
 
-            SnapScoreDiagnostics.FinalDecision(settings, "move", before, desired);
+            SnapScoreDiagnostics.FinalDecision(settings, "move", ClassifySource(monitorChanged, windowChanged), before, desired);
             return changed;
         }
 
@@ -75,14 +79,18 @@ namespace RhaegarMove
             SnapScoreDiagnostics.BeginSession(settings, "resize");
             int threshold = Math.Max(0, settings.SnapThreshold);
             SnapResizeToMonitor(ref desired, edge, threshold, settings.SnapGap, settings);
+            bool monitorChanged = !SameRect(before, desired);
+            RECT afterMonitor = desired;
 
+            bool windowChanged = false;
             if (settings.SnapToWindows && settings.AutoSnap >= 2)
             {
                 List<SnapTarget> targets = CollectTargets(hwnd, settings);
                 SnapResizeToWindows(ref desired, edge, targets, threshold, settings.SnapGap, settings.AutoSnap >= 3, settings);
+                windowChanged = !SameRect(afterMonitor, desired);
             }
 
-            SnapScoreDiagnostics.FinalDecision(settings, "resize", before, desired);
+            SnapScoreDiagnostics.FinalDecision(settings, "resize", ClassifySource(monitorChanged, windowChanged), before, desired);
         }
 
         public static void ApplyStickyResize(IntPtr active, RECT before, RECT after, ResizeEdge edge, AppSettings settings)
@@ -297,6 +305,19 @@ namespace RhaegarMove
                 bestAbs = abs;
                 bestDelta = delta;
             }
+        }
+
+        private static bool SameRect(RECT a, RECT b)
+        {
+            return a.left == b.left && a.top == b.top && a.right == b.right && a.bottom == b.bottom;
+        }
+
+        private static string ClassifySource(bool monitorChanged, bool windowChanged)
+        {
+            if (monitorChanged && windowChanged) return "monitor+window";
+            if (monitorChanged) return "monitor";
+            if (windowChanged) return "window";
+            return "none";
         }
 
         private static List<SnapTarget> CollectTargets(IntPtr active, AppSettings settings)
