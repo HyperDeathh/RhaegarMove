@@ -32,11 +32,13 @@ namespace RhaegarMove
                     width = Math.Max(settings.MinWidth, aero.Width);
                     height = Math.Max(settings.MinHeight, aero.Height);
                     LastRestoreFlags = flags;
+                    RECT afterAero = new RECT(x, y, x + width, y + height);
                     if (settings.EnableSnapDiagnostics)
                     {
                         SnapScoreDiagnostics.BeginSession(settings, "move-aero");
-                        SnapScoreDiagnostics.FinalDecision(settings, "move-aero", "aero", "aero", "aero", before, new RECT(x, y, x + width, y + height));
+                        SnapScoreDiagnostics.FinalDecision(settings, "move-aero", "aero", "aero", "aero", AeroWinnerLabel(flags, true), AeroWinnerLabel(flags, false), before, afterAero);
                     }
+                    DpiSnapDiagnostics.Record(settings, "move-aero", hwnd, pt, before, afterAero);
                     return true;
                 }
             }
@@ -65,7 +67,10 @@ namespace RhaegarMove
 
             string xSource = ClassifyAxis(before.left, afterMonitor.left, desired.left);
             string ySource = ClassifyAxis(before.top, afterMonitor.top, desired.top);
-            SnapScoreDiagnostics.FinalDecision(settings, "move", ClassifySource(xSource, ySource), xSource, ySource, before, desired);
+            string xWinnerLabel = MoveWinnerLabel(true, before, afterMonitor, desired, pt, settings.SnapGap);
+            string yWinnerLabel = MoveWinnerLabel(false, before, afterMonitor, desired, pt, settings.SnapGap);
+            SnapScoreDiagnostics.FinalDecision(settings, "move", ClassifySource(xSource, ySource), xSource, ySource, xWinnerLabel, yWinnerLabel, before, desired);
+            DpiSnapDiagnostics.Record(settings, "move", hwnd, pt, before, desired);
             return changed;
         }
 
@@ -75,6 +80,7 @@ namespace RhaegarMove
                 return;
 
             RECT before = desired;
+            POINT center = new POINT((before.left + before.right) / 2, (before.top + before.bottom) / 2);
             SnapScoreDiagnostics.BeginSession(settings, "resize");
             int threshold = Math.Max(0, settings.SnapThreshold);
             SnapResizeToMonitor(ref desired, edge, threshold, settings.SnapGap, settings);
@@ -88,7 +94,10 @@ namespace RhaegarMove
 
             string xSource = ClassifyAxis(before.left, before.right, afterMonitor.left, afterMonitor.right, desired.left, desired.right);
             string ySource = ClassifyAxis(before.top, before.bottom, afterMonitor.top, afterMonitor.bottom, desired.top, desired.bottom);
-            SnapScoreDiagnostics.FinalDecision(settings, "resize", ClassifySource(xSource, ySource), xSource, ySource, before, desired);
+            string xWinnerLabel = ResizeWinnerLabel(true, before, afterMonitor, desired);
+            string yWinnerLabel = ResizeWinnerLabel(false, before, afterMonitor, desired);
+            SnapScoreDiagnostics.FinalDecision(settings, "resize", ClassifySource(xSource, ySource), xSource, ySource, xWinnerLabel, yWinnerLabel, before, desired);
+            DpiSnapDiagnostics.Record(settings, "resize", hwnd, center, before, desired);
         }
 
         public static void ApplyStickyResize(IntPtr active, RECT before, RECT after, ResizeEdge edge, AppSettings settings)
@@ -337,6 +346,81 @@ namespace RhaegarMove
             if (monitorChanged) return "monitor";
             if (windowChanged) return "window";
             return "none";
+        }
+
+        private static string MoveWinnerLabel(bool horizontal, RECT before, RECT afterMonitor, RECT afterFinal, POINT pt, int gap)
+        {
+            bool monitorChanged = horizontal ? before.left != afterMonitor.left : before.top != afterMonitor.top;
+            bool windowChanged = horizontal ? afterMonitor.left != afterFinal.left : afterMonitor.top != afterFinal.top;
+            string monitor = monitorChanged ? MoveMonitorLabel(horizontal, afterMonitor, pt, gap) : "none";
+            string window = windowChanged ? (horizontal ? "window-x" : "window-y") : "none";
+            return CombineLabels(monitor, window);
+        }
+
+        private static string MoveMonitorLabel(bool horizontal, RECT afterMonitor, POINT pt, int gap)
+        {
+            RECT work;
+            if (!Geometry.TryGetMonitorWorkArea(pt, out work))
+                return horizontal ? "monitor-x" : "monitor-y";
+            if (horizontal)
+            {
+                if (afterMonitor.left == work.left + gap) return "monitor-left";
+                if (afterMonitor.right == work.right - gap) return "monitor-right";
+                return "monitor-x";
+            }
+            if (afterMonitor.top == work.top + gap) return "monitor-top";
+            if (afterMonitor.bottom == work.bottom - gap) return "monitor-bottom";
+            return "monitor-y";
+        }
+
+        private static string ResizeWinnerLabel(bool horizontal, RECT before, RECT afterMonitor, RECT afterFinal)
+        {
+            bool monitorChanged = horizontal ? before.left != afterMonitor.left || before.right != afterMonitor.right : before.top != afterMonitor.top || before.bottom != afterMonitor.bottom;
+            bool windowChanged = horizontal ? afterMonitor.left != afterFinal.left || afterMonitor.right != afterFinal.right : afterMonitor.top != afterFinal.top || afterMonitor.bottom != afterFinal.bottom;
+            string monitor = monitorChanged ? ResizeChangedEdgeLabel(horizontal, before, afterMonitor, "monitor") : "none";
+            string window = windowChanged ? ResizeChangedEdgeLabel(horizontal, afterMonitor, afterFinal, "window") : "none";
+            return CombineLabels(monitor, window);
+        }
+
+        private static string ResizeChangedEdgeLabel(bool horizontal, RECT before, RECT after, string prefix)
+        {
+            if (horizontal)
+            {
+                bool left = before.left != after.left;
+                bool right = before.right != after.right;
+                if (left && right) return prefix + "-x";
+                if (left) return prefix + "-left";
+                if (right) return prefix + "-right";
+                return "none";
+            }
+            bool top = before.top != after.top;
+            bool bottom = before.bottom != after.bottom;
+            if (top && bottom) return prefix + "-y";
+            if (top) return prefix + "-top";
+            if (bottom) return prefix + "-bottom";
+            return "none";
+        }
+
+        private static string CombineLabels(string first, string second)
+        {
+            if (first == "none") return second;
+            if (second == "none") return first;
+            if (first == second) return first;
+            return first + "+" + second;
+        }
+
+        private static string AeroWinnerLabel(int flags, bool horizontal)
+        {
+            if ((flags & RestoreFlags.Maximized) != 0) return "aero-maximize";
+            if (horizontal)
+            {
+                if ((flags & RestoreFlags.Left) != 0) return "aero-left";
+                if ((flags & RestoreFlags.Right) != 0) return "aero-right";
+                return "aero-x";
+            }
+            if ((flags & RestoreFlags.Top) != 0) return "aero-top";
+            if ((flags & RestoreFlags.Bottom) != 0) return "aero-bottom";
+            return "aero-y";
         }
 
         private static List<SnapTarget> CollectTargets(IntPtr active, AppSettings settings)
