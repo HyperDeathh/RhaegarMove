@@ -29,16 +29,6 @@ jobs:
             uninstall.bat
             stop.bat
             status.bat
-            open_config.bat
             settings.bat
-            diagnose_cursor.bat
-            preview_status.bat
-            reload.bat
-            request_exit.bat
-            snap_targets.bat
-            snap_score.bat
-            minmax_report.bat
-            dpi_snap_report.bat
-            verify_build.bat
-            config_report.bat
+            tools.bat
           if-no-files-found: error
