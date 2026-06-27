@@ -29,7 +29,7 @@ namespace RhaegarMove
         public bool EnablePreviewState = false;
         public bool EnablePreviewOverlay = false;
         public bool EnablePreviewOnlySnap = false;
-        public bool EnableTrayIcon = true;
+        public bool EnableTrayIcon = false;
         public bool AllowFullScreenWindows = false;
         public bool SkipMaximizedWindows = false;
         public bool NotifyMoveSizeEvents = true;
