@@ -62,6 +62,7 @@ Status: in progress.
 Implemented:
 
 - Final snap diagnostics now include `xSource` and `ySource` in addition to the combined `source`.
+- Final snap diagnostics now include `xWinnerLabel` and `yWinnerLabel`.
 - Possible axis sources: `aero`, `monitor`, `window`, `monitor+window`, `none`.
 
 Why this matters:
@@ -71,12 +72,12 @@ Why this matters:
 
 Still missing:
 
-- Axis-level best candidate labels, not just source class.
+- Exact window-edge target metadata for the winning window target.
 - Separate monitor-vs-window scoring summary for X and Y axes.
 
 ## Phase 46: DWM cloaked-window filtering
 
-Status: started.
+Status: in progress.
 
 Implemented:
 
@@ -85,6 +86,7 @@ Implemented:
 - Main target selection skips cloaked windows by default.
 - Snap target collection skips cloaked windows by default.
 - `AllowCloakedWindows=false` default setting for opt-in override.
+- Cursor diagnostics report `dwmCloaked=<value>`.
 
 Why this matters:
 
@@ -93,17 +95,18 @@ Why this matters:
 
 Still missing:
 
-- Separate diagnostics command that explains whether the cursor window is cloaked.
+- Cloaked state reason source, for example app/shell/inherited cloak classification.
 
 ## Phase 47: native min/max diagnostics
 
-Status: started.
+Status: in progress.
 
 Implemented:
 
 - `WindowMinMaxDiagnostics` writes `%LOCALAPPDATA%\RhaegarMove\minmax.txt` when snap diagnostics are enabled.
 - Diagnostics include class, title, min track size, max track size, max size, max position, before rect, after rect, and changed flag.
 - `minmax_report.bat` helper prints the report.
+- `diagnose_cursor.bat` now includes native min/max values for the cursor window when available.
 
 Why this matters:
 
@@ -112,11 +115,11 @@ Why this matters:
 
 Still missing:
 
-- A cursor-specific min/max diagnostic command.
+- Min/max values in the settings UI rule helper panel.
 
 ## Phase 48: NoMinMaxInfo rule list
 
-Status: started.
+Status: in progress.
 
 Implemented:
 
@@ -124,6 +127,7 @@ Implemented:
 - `[Blacklist] NoMinMaxInfo=` config field.
 - Rule-list editor support.
 - Rule validation support.
+- Cursor diagnostics report `respectMinMaxInfo=<value>` and `minMaxInfo=blocked-by-rule` when matched.
 
 Why this matters:
 
@@ -134,13 +138,45 @@ Still missing:
 
 - Preset examples for common problematic windows, if any are discovered during testing.
 
+## Phase 52: Per-monitor DPI snap audit
+
+Status: started.
+
+Implemented:
+
+- `DpiSnapDiagnostics` writes `%LOCALAPPDATA%\RhaegarMove\dpi-snap.txt` when snap diagnostics are enabled.
+- The report includes window DPI, cursor point, monitor work area, before/after rectangle, and restore size/DPI/flags if present.
+- `dpi_snap_report.bat` prints the report.
+
+Why this matters:
+
+- Snap/restore bugs often appear only on mixed-DPI monitor setups.
+- This report makes DPI scaling and monitor work-area behavior visible.
+
+Still missing:
+
+- Monitor DPI from the monitor handle itself, not only window DPI.
+
+## Phase 53: Build verification helper
+
+Status: started.
+
+Implemented:
+
+- `verify_build.bat` runs `build.bat` and verifies `dist\RhaegarMove.exe` exists.
+- CI artifacts include `verify_build.bat`.
+
+Still missing:
+
+- A confirmed GitHub Actions workflow result or local Windows build result.
+
 ## Next high-value quality work
 
-1. **Cursor-specific cloaked/minmax diagnostics**
-   - Make `diagnose_cursor.bat` show cloaked state and native min/max values.
+1. **Exact winning window target metadata**
+   - Include hwnd/class/title of the snap target that won X/Y.
 2. **Build verification**
-   - Confirm Windows build with GitHub Actions or local `build.bat` before calling the app stable.
-3. **Axis-level best candidate labels**
-   - Report the exact winning edge label for X and Y.
-4. **Per-monitor DPI snap audit**
-   - Add diagnostics for monitor DPI, work area, and restore DPI during snap/restore.
+   - Confirm Windows build with GitHub Actions or local `verify_build.bat` before calling the app stable.
+3. **Per-monitor DPI source**
+   - Add monitor DPI via monitor handle where available.
+4. **Settings help panel**
+   - Show practical examples for `NoMinMaxInfo`, `SnapList`, and `NoResize`.
