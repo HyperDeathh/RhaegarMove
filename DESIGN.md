@@ -34,12 +34,14 @@ The source is modular:
 - `DpiHelper.cs`: DPI lookup and restore-size scaling helpers.
 - `ResizeEngine.cs`: resize-region selection and rectangle calculation.
 - `SizingConstraints.cs`: config-based min/max size clamping.
+- `ConfigFileUpdater.cs`: safe `[General]` key updater for UI edits.
 - `ConfigValidation.cs`: startup/reload config validation, unknown-key, duplicate-key, and normalization report.
 - `RuleDiagnostics.cs`: rule decision snapshots for debugging.
 - `RuntimeCommands.cs`: command-line diagnostics and runtime control helpers.
 - `RuntimeControl.cs`: file-based reload and exit request markers.
 - `RuntimeWatcher.cs`: file watcher for runtime request markers.
-- `TrayIcon.cs`: notification-area menu for config, reload, status folder, and exit.
+- `SettingsForm.cs`: basic WinForms settings editor for safe options.
+- `TrayIcon.cs`: notification-area menu for settings, config, reload, reports, and exit.
 - `SnapDiagnostics.cs`: snap target accept/reject report writer.
 - `SnapScoreDiagnostics.cs`: per-edge candidate scoring and final decision report writer.
 - `SnapPreview.cs`: preview-state snapshots for future outline UI.
@@ -85,13 +87,14 @@ Status: planned and constrained.
 
 ### Phase 6: UX layer
 Status: in progress.
-- `status.bat`, `open_config.bat`, runtime helper scripts, and diagnostics helper scripts exist.
+- Runtime helper scripts and diagnostics helper scripts exist.
 - GitHub Actions artifact includes helper scripts.
-- Tray icon exists with config/reload/status/exit actions.
+- Tray icon exists with settings/config/reload/report/exit actions.
+- Basic settings form exists.
 
 Still missing:
-- Config UI.
 - Polished icon asset.
+- Rich settings UI for all rule lists.
 
 ### Phase 7: source cleanup
 Status: done for the active build.
@@ -102,7 +105,7 @@ Status: done for the active build.
 Status: in progress.
 - Mouse hook delegates movement to `OperationWorker`.
 - Mouse move events are coalesced through a worker thread.
-- The hook callback no longer performs the heavy move/resize work directly.
+- The hook callback no longer performs heavy move/resize work directly.
 - Watchdog cleanup still exists.
 
 ### Phase 9: restore metadata and window snap
@@ -211,7 +214,7 @@ Status: in progress.
 - Cancel discards the pending rectangle.
 
 ### Phase 28: duplicate-key config reporting
-Status: started.
+Status: in progress.
 - `AppSettings` tracks duplicate config keys.
 - Last value wins, and the report records which occurrence overrode the previous value.
 - `ConfigValidation` includes a `[duplicate keys]` section.
@@ -220,24 +223,49 @@ Still missing:
 - Section-specific duplicate reporting.
 
 ### Phase 29: final snap decision summary
-Status: started.
+Status: in progress.
 - `SnapScoreDiagnostics.FinalDecision` appends final before/after rectangle summary.
-- Reports include `dx`, `dy`, `dw`, `dh`, and `changed`.
-- Aero snap, move snap, and resize snap can write final decision summaries.
+- Reports include `source`, `dx`, `dy`, `dw`, `dh`, and `changed`.
+- Source classification includes `aero`, `monitor`, `window`, `monitor+window`, and `none`.
 
 Still missing:
-- Explicit “monitor won vs window won” classification.
+- Separate X/Y winner classification.
 
 ### Phase 30: tray/config UX start
-Status: started.
+Status: in progress.
 - `TrayIcon` adds a notification-area icon.
-- Menu actions: Open config, Reload config, Open status folder, Exit RhaegarMove.
+- Menu actions include config, reload, reports folder, and exit.
 - `EnableTrayIcon=true` by default.
 - Reload can update tray visibility.
 
+### Phase 31: tray polish
+Status: started.
+- Tray tooltip reports live vs preview-only mode and snap on/off state.
+- Tray reports submenu opens config report, rule diagnostics, snap targets, and snap score files.
+- Tray menu can open the status folder directly.
+
 Still missing:
 - Custom RhaegarMove icon.
-- Rich settings UI.
+- Last-error/status badge.
+
+### Phase 32: final snap winner classification
+Status: started.
+- Final snap decision now includes `source=aero`, `source=monitor`, `source=window`, `source=monitor+window`, or `source=none`.
+- Move and resize paths classify whether monitor snap, window snap, both, or neither changed the final rectangle.
+
+Still missing:
+- Separate horizontal/vertical winner fields.
+
+### Phase 33: settings UI start
+Status: started.
+- `SettingsForm` provides a basic WinForms UI for safe general options.
+- `ConfigFileUpdater` rewrites known `[General]` keys while preserving unrelated config content.
+- Saving from the UI triggers the existing reload path.
+
+Still missing:
+- Rule-list editor UI.
+- Validation messages inside the form.
+- Reset-to-defaults button.
 
 ## Safety checklist before testing
 
@@ -249,4 +277,4 @@ Still missing:
 
 ## Known current status
 
-RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The project now has modular hook/worker geometry, restore metadata, snapping, advanced rules, diagnostics, config reload, safe exit request, preview overlay, preview-only commit mode, config validation, snap scoring, and a basic tray menu. The next high-value area is tray polish, a real settings UI, and classifying final snap decisions by winning source.
+RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The project now has modular hook/worker geometry, restore metadata, snapping, advanced rules, diagnostics, config reload, safe exit request, preview overlay, preview-only commit mode, config validation, snap scoring, tray UX, and a basic settings form. The next high-value area is tray icon polish, settings validation UI, and rule-list editing.
