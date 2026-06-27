@@ -28,6 +28,11 @@ namespace RhaegarMove
             get { return Path.Combine(ControlDir, "runtime.txt"); }
         }
 
+        public static string LastReloadPath
+        {
+            get { return Path.Combine(ControlDir, "last-reload.txt"); }
+        }
+
         public static void RequestReload()
         {
             Directory.CreateDirectory(ControlDir);
@@ -50,6 +55,34 @@ namespace RhaegarMove
         public static bool ConsumeExitRequest()
         {
             return Consume(ExitRequestPath);
+        }
+
+        public static void MarkReloadApplied(string reason)
+        {
+            try
+            {
+                Directory.CreateDirectory(ControlDir);
+                string text =
+                    "time=" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine +
+                    "reason=" + reason + Environment.NewLine;
+                File.WriteAllText(LastReloadPath, text);
+            }
+            catch
+            {
+            }
+        }
+
+        public static string ReadLastReloadSummary()
+        {
+            try
+            {
+                if (!File.Exists(LastReloadPath)) return "none";
+                return File.ReadAllText(LastReloadPath).Replace("\r", " ").Replace("\n", " ").Trim();
+            }
+            catch
+            {
+                return "unknown";
+            }
         }
 
         public static void WriteRuntime(string text)
