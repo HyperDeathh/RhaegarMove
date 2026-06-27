@@ -26,6 +26,7 @@ namespace RhaegarMove
             Application.SetCompatibleTextRenderingDefault(false);
 
             settings = AppSettings.Load();
+            ConfigValidation.WriteReport(settings, "startup");
             PreviewOverlay.Initialize();
             worker = new OperationWorker(settings);
             mouseHook = new MouseHook(settings, worker);
@@ -90,6 +91,7 @@ namespace RhaegarMove
                 {
                     settings.ReloadFromDisk();
                     WindowRules.Reload();
+                    ConfigValidation.WriteReport(settings, "reload");
                     watchdog.Interval = Math.Max(100, settings.WatchdogMs);
                     RuntimeControl.WriteRuntime("reload applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 }
