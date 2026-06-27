@@ -21,7 +21,7 @@ namespace RhaegarMove
             this.afterSave = afterSave;
             Text = "RhaegarMove Window Rules";
             StartPosition = FormStartPosition.CenterScreen;
-            Size = new Size(720, 620);
+            Size = new Size(720, 660);
             MinimizeBox = false;
             MaximizeBox = false;
             BuildUi();
@@ -33,7 +33,7 @@ namespace RhaegarMove
             TableLayoutPanel root = new TableLayoutPanel();
             root.Dock = DockStyle.Fill;
             root.ColumnCount = 1;
-            root.RowCount = 10;
+            root.RowCount = 11;
             root.Padding = new Padding(12);
             root.AutoScroll = true;
             Controls.Add(root);
@@ -51,6 +51,13 @@ namespace RhaegarMove
             note.AutoSize = true;
             note.Dock = DockStyle.Fill;
             root.Controls.Add(note);
+
+            Button reset = new Button();
+            reset.Text = "Reset default window rules";
+            reset.Height = 32;
+            reset.Dock = DockStyle.Fill;
+            reset.Click += delegate { ResetDefaults(); };
+            root.Controls.Add(reset);
 
             Button save = new Button();
             save.Text = "Save rules and reload";
@@ -97,6 +104,20 @@ namespace RhaegarMove
 
         private void SaveAndReload()
         {
+            ConfigFileUpdater.SetBlacklistValues(CurrentValues());
+            if (afterSave != null) afterSave();
+            Close();
+        }
+
+        private void ResetDefaults()
+        {
+            ConfigFileUpdater.SetBlacklistValues(ConfigDefaults.Blacklist());
+            LoadValues();
+            if (afterSave != null) afterSave();
+        }
+
+        private Dictionary<string, string> CurrentValues()
+        {
             Dictionary<string, string> values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             values["Classes"] = Normalize(classes.Text);
             values["Processes"] = Normalize(processes.Text);
@@ -105,9 +126,7 @@ namespace RhaegarMove
             values["SnapList"] = Normalize(snapList.Text);
             values["NoSizingNotify"] = Normalize(noSizingNotify.Text);
             values["NoResize"] = Normalize(noResize.Text);
-            ConfigFileUpdater.SetBlacklistValues(values);
-            if (afterSave != null) afterSave();
-            Close();
+            return values;
         }
 
         private static string Normalize(string text)
