@@ -161,18 +161,82 @@ $newMove = @'
 '@
 $source = $source.Replace($oldMove, $newMove)
 
-# Phase 3 settings.
+# Phase 4: better resize region selection.
+$oldResizeFromPoint = @'
+            public static ResizeEdge FromPoint(RECT rect, POINT pt)
+            {
+                ResizeEdge e = new ResizeEdge();
+                e.Left = pt.x < rect.left + rect.Width / 2;
+                e.Right = !e.Left;
+                e.Top = pt.y < rect.top + rect.Height / 2;
+                e.Bottom = !e.Top;
+                return e;
+            }
+'@
+$newResizeFromPoint = @'
+            public static ResizeEdge FromPoint(RECT rect, POINT pt)
+            {
+                ResizeEdge e = new ResizeEdge();
+
+                int width = Math.Max(1, rect.Width);
+                int height = Math.Max(1, rect.Height);
+                int localX = Math.Max(0, Math.Min(width, pt.x - rect.left));
+                int localY = Math.Max(0, Math.Min(height, pt.y - rect.top));
+
+                int side = Math.Max(1, Math.Min(49, settings.SidesFraction));
+                int center = Math.Max(0, Math.Min(90, settings.CenterFraction));
+
+                int xPct = (localX * 100) / width;
+                int yPct = (localY * 100) / height;
+
+                bool nearLeft = xPct <= side;
+                bool nearRight = xPct >= 100 - side;
+                bool nearTop = yPct <= side;
+                bool nearBottom = yPct >= 100 - side;
+
+                int centerLeft = 50 - center / 2;
+                int centerRight = 50 + center / 2;
+                bool inCenter = center > 0 && xPct >= centerLeft && xPct <= centerRight && yPct >= centerLeft && yPct <= centerRight;
+
+                if (inCenter && settings.ResizeCenterMode == 2)
+                {
+                    e.Left = pt.x < rect.left + width / 2;
+                    e.Right = !e.Left;
+                    e.Top = pt.y < rect.top + height / 2;
+                    e.Bottom = !e.Top;
+                    return e;
+                }
+
+                e.Left = nearLeft;
+                e.Right = nearRight;
+                e.Top = nearTop;
+                e.Bottom = nearBottom;
+
+                if (!e.Left && !e.Right && !e.Top && !e.Bottom)
+                {
+                    e.Left = pt.x < rect.left + width / 2;
+                    e.Right = !e.Left;
+                    e.Top = pt.y < rect.top + height / 2;
+                    e.Bottom = !e.Top;
+                }
+
+                return e;
+            }
+'@
+$source = $source.Replace($oldResizeFromPoint, $newResizeFromPoint)
+
+# Phase 3 + Phase 4 settings.
 $source = $source.Replace(
     'public bool EnableEdgeSnap = true;',
-    'public bool EnableEdgeSnap = true;' + $nl + '            public bool EnableAeroSnap = true;' + $nl + '            public int AeroThreshold = 8;'
+    'public bool EnableEdgeSnap = true;' + $nl + '            public bool EnableAeroSnap = true;' + $nl + '            public int AeroThreshold = 8;' + $nl + '            public int ResizeCenterMode = 2;' + $nl + '            public int CenterFraction = 24;' + $nl + '            public int SidesFraction = 24;'
 )
 $source = $source.Replace(
     'else if (key.Equals("EnableEdgeSnap", StringComparison.OrdinalIgnoreCase)) s.EnableEdgeSnap = ToBool(value, s.EnableEdgeSnap);',
-    'else if (key.Equals("EnableEdgeSnap", StringComparison.OrdinalIgnoreCase)) s.EnableEdgeSnap = ToBool(value, s.EnableEdgeSnap);' + $nl + '                    else if (key.Equals("EnableAeroSnap", StringComparison.OrdinalIgnoreCase)) s.EnableAeroSnap = ToBool(value, s.EnableAeroSnap);' + $nl + '                    else if (key.Equals("AeroThreshold", StringComparison.OrdinalIgnoreCase)) s.AeroThreshold = ToInt(value, s.AeroThreshold);'
+    'else if (key.Equals("EnableEdgeSnap", StringComparison.OrdinalIgnoreCase)) s.EnableEdgeSnap = ToBool(value, s.EnableEdgeSnap);' + $nl + '                    else if (key.Equals("EnableAeroSnap", StringComparison.OrdinalIgnoreCase)) s.EnableAeroSnap = ToBool(value, s.EnableAeroSnap);' + $nl + '                    else if (key.Equals("AeroThreshold", StringComparison.OrdinalIgnoreCase)) s.AeroThreshold = ToInt(value, s.AeroThreshold);' + $nl + '                    else if (key.Equals("ResizeCenterMode", StringComparison.OrdinalIgnoreCase)) s.ResizeCenterMode = ToInt(value, s.ResizeCenterMode);' + $nl + '                    else if (key.Equals("CenterFraction", StringComparison.OrdinalIgnoreCase)) s.CenterFraction = ToInt(value, s.CenterFraction);' + $nl + '                    else if (key.Equals("SidesFraction", StringComparison.OrdinalIgnoreCase)) s.SidesFraction = ToInt(value, s.SidesFraction);'
 )
 $source = $source.Replace(
     's.WatchdogMs = Math.Max(100, s.WatchdogMs);',
-    's.WatchdogMs = Math.Max(100, s.WatchdogMs);' + $nl + '                s.AeroThreshold = Math.Max(1, s.AeroThreshold);'
+    's.WatchdogMs = Math.Max(100, s.WatchdogMs);' + $nl + '                s.AeroThreshold = Math.Max(1, s.AeroThreshold);' + $nl + '                s.ResizeCenterMode = Math.Max(0, Math.Min(2, s.ResizeCenterMode));' + $nl + '                s.CenterFraction = Math.Max(0, Math.Min(90, s.CenterFraction));' + $nl + '                s.SidesFraction = Math.Max(1, Math.Min(49, s.SidesFraction));'
 )
 
 # Phase 2 native import.
