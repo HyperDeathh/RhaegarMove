@@ -73,12 +73,14 @@ namespace RhaegarMove
             private readonly AppSettings settings;
             private readonly RuntimeWatcher runtimeWatcher;
             private readonly Timer watchdog;
+            private readonly TrayIcon trayIcon;
 
             public AppLoop(OperationWorker worker, AppSettings settings)
             {
                 this.worker = worker;
                 this.settings = settings;
                 runtimeWatcher = new RuntimeWatcher();
+                trayIcon = new TrayIcon(settings, ApplyReload, RequestExit);
                 watchdog = new Timer();
                 watchdog.Interval = Math.Max(100, settings.WatchdogMs);
                 watchdog.Tick += delegate { OnTick(); };
@@ -90,19 +92,26 @@ namespace RhaegarMove
                 worker.Watchdog();
 
                 if (runtimeWatcher.ConsumeReload())
-                {
-                    settings.ReloadFromDisk();
-                    WindowRules.Reload();
-                    ConfigValidation.WriteReport(settings, "reload");
-                    watchdog.Interval = Math.Max(100, settings.WatchdogMs);
-                    RuntimeControl.WriteRuntime("reload applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                }
+                    ApplyReload();
 
                 if (runtimeWatcher.ConsumeExit())
-                {
-                    RuntimeControl.WriteRuntime("exit applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                    ExitThread();
-                }
+                    RequestExit();
+            }
+
+            private void ApplyReload()
+            {
+                settings.ReloadFromDisk();
+                WindowRules.Reload();
+                ConfigValidation.WriteReport(settings, "reload");
+                watchdog.Interval = Math.Max(100, settings.WatchdogMs);
+                trayIcon.SetVisible(settings.EnableTrayIcon);
+                RuntimeControl.WriteRuntime("reload applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            }
+
+            private void RequestExit()
+            {
+                RuntimeControl.WriteRuntime("exit applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                ExitThread();
             }
 
             protected override void Dispose(bool disposing)
@@ -111,6 +120,7 @@ namespace RhaegarMove
                 {
                     watchdog.Stop();
                     watchdog.Dispose();
+                    trayIcon.Dispose();
                     runtimeWatcher.Dispose();
                 }
                 base.Dispose(disposing);
