@@ -18,6 +18,11 @@ namespace RhaegarMove
                 WriteStatus();
                 return true;
             }
+            if (command == "--settings" || command == "/settings")
+            {
+                ShowSettingsWindow();
+                return true;
+            }
             if (command == "--reload" || command == "/reload")
             {
                 RuntimeControl.RequestReload();
@@ -44,6 +49,13 @@ namespace RhaegarMove
                 return true;
             }
             return false;
+        }
+
+        private static void ShowSettingsWindow()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new SettingsForm(delegate { RuntimeControl.RequestReload(); }));
         }
 
         private static void WriteStatus()
