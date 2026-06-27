@@ -63,8 +63,10 @@ namespace RhaegarMove
             bool running = IsMainInstanceRunning();
             AppSettings settings = AppSettings.Load();
             string local = RuntimeControl.ControlDir;
+            string previous = ReadExistingRuntime();
             string text =
                 "RhaegarMove running=" + running + Environment.NewLine +
+                "previousRuntime=" + previous + Environment.NewLine +
                 "controlMode=file-marker+watcher" + Environment.NewLine +
                 "settingsCommand=available" + Environment.NewLine +
                 "trayIconConfigured=" + settings.EnableTrayIcon + Environment.NewLine +
@@ -88,6 +90,21 @@ namespace RhaegarMove
                 "exitRequest=" + RuntimeControl.ExitRequestPath + Environment.NewLine +
                 "exitRequestPending=" + File.Exists(RuntimeControl.ExitRequestPath) + Environment.NewLine;
             RuntimeControl.WriteRuntime(text);
+        }
+
+        private static string ReadExistingRuntime()
+        {
+            try
+            {
+                if (!File.Exists(RuntimeControl.RuntimePath)) return "none";
+                string value = File.ReadAllText(RuntimeControl.RuntimePath).Replace("\r", " ").Replace("\n", " | ").Trim();
+                if (value.Length > 300) value = value.Substring(0, 300) + "...";
+                return value.Length == 0 ? "empty" : value;
+            }
+            catch
+            {
+                return "unknown";
+            }
         }
 
         private static bool IsMainInstanceRunning()
