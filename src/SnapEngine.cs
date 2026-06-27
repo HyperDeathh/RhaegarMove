@@ -131,10 +131,14 @@ namespace RhaegarMove
                     changed = true;
                 }
 
-                if (changed && r.Width >= settings.MinWidth && r.Height >= settings.MinHeight)
+                if (changed)
                 {
-                    NativeMethods.SetWindowPos(target.Hwnd, IntPtr.Zero, r.left, r.top, r.Width, r.Height,
-                        NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
+                    r = SizingConstraints.ApplyAll(target.Hwnd, r, ResizeEdge.FromDelta(dxLeft, dxRight, dyTop, dyBottom), settings);
+                    if (r.Width >= settings.MinWidth && r.Height >= settings.MinHeight)
+                    {
+                        NativeMethods.SetWindowPos(target.Hwnd, IntPtr.Zero, r.left, r.top, r.Width, r.Height,
+                            NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
+                    }
                 }
             }
         }
@@ -160,7 +164,7 @@ namespace RhaegarMove
             if (nearLeft && nearBottom) { rect = new RECT(work.left, midY, midX, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Left | RestoreFlags.Bottom; return true; }
             if (nearRight && nearTop) { rect = new RECT(midX, work.top, work.right, midY); flags = RestoreFlags.Snapped | RestoreFlags.Right | RestoreFlags.Top; return true; }
             if (nearRight && nearBottom) { rect = new RECT(midX, midY, work.right, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Right | RestoreFlags.Bottom; return true; }
-            if (nearTop) { rect = new RECT(work.left, work.top, work.right, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Maximized; return true; }
+            if (nearTop && settings.AeroTopMaximizes) { rect = new RECT(work.left, work.top, work.right, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Maximized; return true; }
             if (nearLeft) { rect = new RECT(work.left, work.top, midX, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Left; return true; }
             if (nearRight) { rect = new RECT(midX, work.top, work.right, work.bottom); flags = RestoreFlags.Snapped | RestoreFlags.Right; return true; }
             return false;
@@ -359,6 +363,11 @@ namespace RhaegarMove
                 if (NativeMethods.IsIconic(hwnd))
                 {
                     diagnostics.Reject(hwnd, "minimized");
+                    return true;
+                }
+                if (!settings.AllowCloakedWindows && Geometry.IsDwmCloaked(hwnd))
+                {
+                    diagnostics.Reject(hwnd, "dwm cloaked");
                     return true;
                 }
 
