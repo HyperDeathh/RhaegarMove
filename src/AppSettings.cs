@@ -24,6 +24,7 @@ namespace RhaegarMove
         public bool SnapToWindows = true;
         public bool StickyResize = false;
         public bool EnableRuleDiagnostics = false;
+        public bool EnablePreviewState = false;
         public bool AllowFullScreenWindows = false;
         public bool SkipMaximizedWindows = false;
         public bool NotifyMoveSizeEvents = true;
@@ -67,6 +68,7 @@ namespace RhaegarMove
             else if (key.Equals("SnapToWindows", StringComparison.OrdinalIgnoreCase)) SnapToWindows = ToBool(value, SnapToWindows);
             else if (key.Equals("StickyResize", StringComparison.OrdinalIgnoreCase)) StickyResize = ToBool(value, StickyResize);
             else if (key.Equals("EnableRuleDiagnostics", StringComparison.OrdinalIgnoreCase)) EnableRuleDiagnostics = ToBool(value, EnableRuleDiagnostics);
+            else if (key.Equals("EnablePreviewState", StringComparison.OrdinalIgnoreCase)) EnablePreviewState = ToBool(value, EnablePreviewState);
             else if (key.Equals("AllowFullScreenWindows", StringComparison.OrdinalIgnoreCase)) AllowFullScreenWindows = ToBool(value, AllowFullScreenWindows);
             else if (key.Equals("SkipMaximizedWindows", StringComparison.OrdinalIgnoreCase)) SkipMaximizedWindows = ToBool(value, SkipMaximizedWindows);
             else if (key.Equals("NotifyMoveSizeEvents", StringComparison.OrdinalIgnoreCase)) NotifyMoveSizeEvents = ToBool(value, NotifyMoveSizeEvents);
