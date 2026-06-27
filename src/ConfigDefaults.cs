@@ -23,6 +23,7 @@ namespace RhaegarMove
             values["SnapToWindows"] = "true";
             values["SnapGap"] = "0";
             values["StickyResize"] = "false";
+            values["RespectWindowMinMaxInfo"] = "true";
             values["EnableRuleDiagnostics"] = "false";
             values["EnableSnapDiagnostics"] = "false";
             values["EnablePreviewState"] = "false";
