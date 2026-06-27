@@ -61,9 +61,14 @@ namespace RhaegarMove
         private static void WriteStatus()
         {
             bool running = Process.GetProcessesByName("RhaegarMove").Length > 0;
+            AppSettings settings = AppSettings.Load();
             string local = RuntimeControl.ControlDir;
             string text =
                 "RhaegarMove running=" + running + Environment.NewLine +
+                "controlMode=file-marker+watcher" + Environment.NewLine +
+                "settingsCommand=available" + Environment.NewLine +
+                "trayIconConfigured=" + settings.EnableTrayIcon + Environment.NewLine +
+                "trayDefault=false" + Environment.NewLine +
                 "config=" + GetConfigPath() + Environment.NewLine +
                 "configReport=" + Path.Combine(local, "config-report.txt") + Environment.NewLine +
                 "rules=" + Path.Combine(local, "rules.txt") + Environment.NewLine +
@@ -71,9 +76,25 @@ namespace RhaegarMove
                 "snapTargets=" + Path.Combine(local, "snap-targets.txt") + Environment.NewLine +
                 "snapScore=" + Path.Combine(local, "snap-score.txt") + Environment.NewLine +
                 "runtime=" + RuntimeControl.RuntimePath + Environment.NewLine +
+                "runtimeLastWrite=" + LastWrite(RuntimeControl.RuntimePath) + Environment.NewLine +
                 "reloadRequest=" + RuntimeControl.ReloadRequestPath + Environment.NewLine +
-                "exitRequest=" + RuntimeControl.ExitRequestPath + Environment.NewLine;
+                "reloadRequestPending=" + File.Exists(RuntimeControl.ReloadRequestPath) + Environment.NewLine +
+                "exitRequest=" + RuntimeControl.ExitRequestPath + Environment.NewLine +
+                "exitRequestPending=" + File.Exists(RuntimeControl.ExitRequestPath) + Environment.NewLine;
             RuntimeControl.WriteRuntime(text);
+        }
+
+        private static string LastWrite(string path)
+        {
+            try
+            {
+                if (!File.Exists(path)) return "none";
+                return File.GetLastWriteTime(path).ToString("yyyy-MM-dd HH:mm:ss");
+            }
+            catch
+            {
+                return "unknown";
+            }
         }
 
         private static string GetConfigPath()
