@@ -41,9 +41,13 @@ namespace RhaegarMove
             b.AppendLine("AeroMaxSpeed=" + s.AeroMaxSpeed);
             b.AppendLine("AeroSpeedTau=" + s.AeroSpeedTau);
             b.AppendLine("EnablePreviewOnlySnap=" + s.EnablePreviewOnlySnap);
+            b.AppendLine("EnableTrayIcon=" + s.EnableTrayIcon);
             b.AppendLine();
             b.AppendLine("[unknown keys]");
             AppendListOrNone(b, s.UnknownConfigKeys);
+            b.AppendLine();
+            b.AppendLine("[duplicate keys]");
+            AppendListOrNone(b, s.DuplicateConfigKeys);
             b.AppendLine();
             b.AppendLine("[normalization notes]");
             AppendListOrNone(b, s.NormalizationNotes);
@@ -55,8 +59,8 @@ namespace RhaegarMove
 
         private static string GetStatus(AppSettings s)
         {
-            if (s.UnknownConfigKeys.Count > 0 || s.NormalizationNotes.Count > 0)
-                return "config has unknown or normalized values";
+            if (s.UnknownConfigKeys.Count > 0 || s.DuplicateConfigKeys.Count > 0 || s.NormalizationNotes.Count > 0)
+                return "config has unknown, duplicate, or normalized values";
             if (s.StickyResize || s.EnablePreviewOverlay || s.EnablePreviewOnlySnap || s.EnableSnapDiagnostics || s.EnableRuleDiagnostics)
                 return "advanced diagnostics/features enabled";
             return "safe defaults or normal options";
@@ -114,6 +118,11 @@ namespace RhaegarMove
             if (s.MaxWidth > 0 || s.MaxHeight > 0)
             {
                 b.AppendLine("- MaxWidth/MaxHeight limits are active; some windows may stop resizing before the monitor edge.");
+                any = true;
+            }
+            if (!s.EnableTrayIcon)
+            {
+                b.AppendLine("- Tray icon is disabled; reload/exit must use helper scripts or process tools.");
                 any = true;
             }
             if (!any)
