@@ -35,14 +35,16 @@ The source is modular:
 - `DpiHelper.cs`: DPI lookup and restore-size scaling helpers.
 - `ResizeEngine.cs`: resize-region selection and rectangle calculation.
 - `SizingConstraints.cs`: config-based min/max size clamping.
+- `ConfigDefaults.cs`: resettable General and Blacklist defaults.
 - `ConfigFileUpdater.cs`: safe section key updater for UI edits.
-- `ConfigValidation.cs`: startup/reload config validation, unknown-key, duplicate-key, and normalization report.
+- `ConfigValidation.cs`: startup/reload config validation, unknown-key, duplicate-key, rule validation, and normalization report.
+- `RuleValidation.cs`: validates blacklist/rule-list syntax and risky broad patterns.
 - `RuleDiagnostics.cs`: rule decision snapshots for debugging.
-- `RuntimeCommands.cs`: command-line diagnostics, settings UI launcher, and runtime control helpers.
+- `RuntimeCommands.cs`: command-line diagnostics, settings UI launcher, status/control-mode report, and runtime control helpers.
 - `RuntimeControl.cs`: file-based reload and exit request markers.
 - `RuntimeWatcher.cs`: file watcher for runtime request markers.
-- `SettingsForm.cs`: basic WinForms settings editor for safe options, with warnings.
-- `RuleListForm.cs`: basic blacklist/rule-list editor.
+- `SettingsForm.cs`: basic WinForms settings editor for safe options, with warnings and reset buttons.
+- `RuleListForm.cs`: basic blacklist/rule-list editor with reset default rules action.
 - `TrayIcon.cs`: optional notification-area menu; disabled by default and not created unless enabled.
 - `SnapDiagnostics.cs`: snap target accept/reject report writer.
 - `SnapScoreDiagnostics.cs`: per-edge candidate scoring and final decision report writer.
@@ -73,14 +75,12 @@ Status: in progress.
 - Monitor-edge snap exists.
 - Left/right/top/corner Aero-style snap exists.
 - Snap-to-other-windows exists for move and resize basics.
-- `EnableAeroSnap`, `AeroThreshold`, `AeroMaxSpeed`, and `AeroSpeedTau` config options exist.
 
 ### Phase 4: resize quality
 Status: in progress.
 - Side/center resize regions exist.
 - `ResizeCenterMode`, `CenterFraction`, and `SidesFraction` config options exist.
 - Symmetric center resize exists.
-- Resize still sends sizing messages during resize.
 
 ### Phase 5: optional advanced input
 Status: planned and constrained.
@@ -94,10 +94,6 @@ Status: in progress.
 - Basic settings form exists and can be opened without tray.
 - Tray support exists but is opt-in and disabled by default.
 
-Still missing:
-- Polished icon asset if tray is enabled.
-- Rich settings UI for all advanced options.
-
 ### Phase 7: source cleanup
 Status: done for the active build.
 - Main logic has been split into focused source files.
@@ -107,15 +103,13 @@ Status: done for the active build.
 Status: in progress.
 - Mouse hook delegates movement to `OperationWorker`.
 - Mouse move events are coalesced through a worker thread.
-- The hook callback no longer performs heavy move/resize work directly.
 - Watchdog cleanup still exists.
 
 ### Phase 9: restore metadata and window snap
 Status: in progress.
 - `WindowRestoreStore` stores snapped-window restore size and flags with `SetProp/GetProp` plus fallback storage.
 - Aero snap writes restore metadata before snapping.
-- Dragging a snapped/maximized window uses restore metadata when available.
-- `SnapEngine` collects other top-level windows and supports basic edge-to-window snapping.
+- Snap-to-other-windows basics exist.
 
 ### Phase 10: advanced window rules
 Status: in progress.
@@ -142,7 +136,6 @@ Status: in progress.
 Status: in progress.
 - `RuleDiagnostics` writes `%LOCALAPPDATA%\RhaegarMove\rules.txt`.
 - Diagnostics include matched rule explanations.
-- `diagnose_cursor.bat` can inspect the window under the cursor.
 
 ### Phase 15: preview and outline foundation
 Status: in progress.
@@ -169,7 +162,7 @@ Status: in progress.
 Status: in progress.
 - `AppSettings` supports in-place reload.
 - `WindowRules.Reload()` resets cached rule lists.
-- App loop consumes reload requests and updates the watchdog interval.
+- App loop consumes reload requests and updates watchdog interval.
 
 ### Phase 20: safe exit request
 Status: in progress.
@@ -195,43 +188,31 @@ Status: in progress.
 ### Phase 24: per-edge snap scoring diagnostics
 Status: in progress.
 - `SnapScoreDiagnostics` writes `snap-score.txt` when `EnableSnapDiagnostics=true`.
-- Move and resize candidate edges include delta, absolute distance, threshold membership, and best candidate.
 
 ### Phase 25: unknown-key config validation
 Status: in progress.
 - `AppSettings` tracks unknown config keys and malformed key/value lines.
 - Invalid integer/boolean values are recorded as normalization notes.
-- Clamped numeric values are recorded as raw-to-normalized notes.
 
 ### Phase 26: monitor-edge scoring
 Status: in progress.
-- Monitor/workarea move edges are scored as `monitor-left`, `monitor-top`, `monitor-right`, and `monitor-bottom`.
-- Resize monitor/workarea edges are scored for the active resize side.
+- Monitor/workarea move and resize edges are scored.
 - Monitor and window scoring append to the same gesture report.
 
 ### Phase 27: preview-only snap mode
 Status: in progress.
 - `EnablePreviewOnlySnap=false` by default.
-- When enabled, calculated rectangles are held as pending and committed on mouse release/watchdog finish.
-- Cancel discards the pending rectangle.
+- Pending rectangles are committed on release/watchdog finish when enabled.
 
 ### Phase 28: duplicate-key config reporting
 Status: in progress.
 - `AppSettings` tracks duplicate config keys.
 - Last value wins, and the report records which occurrence overrode the previous value.
-- `ConfigValidation` includes a `[duplicate keys]` section.
-
-Still missing:
-- Section-specific duplicate reporting.
 
 ### Phase 29: final snap decision summary
 Status: in progress.
-- `SnapScoreDiagnostics.FinalDecision` appends final before/after rectangle summary.
-- Reports include `source`, `dx`, `dy`, `dw`, `dh`, and `changed`.
+- Final reports include `source`, `dx`, `dy`, `dw`, `dh`, and `changed`.
 - Source classification includes `aero`, `monitor`, `window`, `monitor+window`, and `none`.
-
-Still missing:
-- Separate X/Y winner classification.
 
 ### Phase 30: tray/config UX start
 Status: revised after UX decision.
@@ -241,57 +222,64 @@ Status: revised after UX decision.
 - Settings can be opened with `settings.bat` or `RhaegarMove.exe --settings` instead of relying on tray.
 
 ### Phase 31: optional tray polish
-Status: started but opt-in.
+Status: opt-in only.
 - If tray is enabled, tooltip reports live vs preview-only mode and snap on/off state.
-- Tray reports submenu opens config report, rule diagnostics, snap targets, and snap score files.
-- Tray menu can open the status folder directly.
-
-Still missing:
-- Custom RhaegarMove icon if tray is enabled.
-- Last-error/status badge.
+- Tray report submenu can open diagnostic files.
 
 ### Phase 32: final snap winner classification
-Status: started.
-- Final snap decision now includes `source=aero`, `source=monitor`, `source=window`, `source=monitor+window`, or `source=none`.
-- Move and resize paths classify whether monitor snap, window snap, both, or neither changed the final rectangle.
-
-Still missing:
-- Separate horizontal/vertical winner fields.
+Status: in progress.
+- Final snap decision includes `source=aero`, `source=monitor`, `source=window`, `source=monitor+window`, or `source=none`.
 
 ### Phase 33: settings UI start
 Status: in progress.
 - `SettingsForm` provides a basic WinForms UI for safe general options.
-- `ConfigFileUpdater` rewrites known `[General]` keys while preserving unrelated config content.
-- Saving from the UI triggers the existing reload path.
 - `settings.bat` opens the settings UI without tray.
 
 ### Phase 34: settings validation UI
-Status: started.
-- Settings form now shows live warnings for risky options such as high snap threshold, sticky resize, preview overlay, preview-only snap, diagnostics, and optional tray.
+Status: in progress.
+- Settings form shows live warnings for risky options such as high snap threshold, sticky resize, preview overlay, preview-only snap, diagnostics, and optional tray.
 - The form explicitly notes that tray is optional and disabled by default.
 
-Still missing:
-- Inline validation for rule syntax.
-- Save confirmation when multiple advanced options are enabled.
-
 ### Phase 35: rule-list editor
-Status: started.
+Status: in progress.
 - `RuleListForm` edits `Classes`, `Processes`, `Titles`, `Rules`, `SnapList`, `NoSizingNotify`, and `NoResize` under `[Blacklist]`.
-- `ConfigFileUpdater` can now update named sections while preserving other config content.
+- `ConfigFileUpdater` can update named sections while preserving other config content.
 - Settings form links to the rule editor.
 
-Still missing:
-- Per-rule validation and examples.
-- Restore default rules button.
-
 ### Phase 36: no-tray default UX
-Status: started.
+Status: in progress.
 - `EnableTrayIcon=false` in default config and fallback settings.
 - `settings.bat` is included in build artifacts.
 - Tray support remains configurable, but no tray icon is created unless explicitly enabled.
 
+### Phase 37: rule validation
+Status: started.
+- `RuleValidation` validates rule-list CSV fields and composite `process:title|class` syntax.
+- Warnings include missing keys, empty composite segments, too many separators, tabs, and broad `SnapList=*`.
+- Rule validation is included in `config-report.txt`.
+
 Still missing:
-- Optional command to print current UI/control mode in status output.
+- Inline validation directly inside `RuleListForm` while editing.
+- Examples next to each rule input.
+
+### Phase 38: reset defaults
+Status: started.
+- `ConfigDefaults` centralizes resettable General and Blacklist defaults.
+- Settings UI has `Reset general defaults` and `Reset window rules` actions.
+- Rule-list editor has `Reset default window rules`.
+
+Still missing:
+- Confirmation dialog before reset.
+- Reset all command-line helper.
+
+### Phase 39: status/control mode report
+Status: started.
+- `--status` reports `controlMode=file-marker+watcher`.
+- `--status` reports `settingsCommand=available`, `trayDefault=false`, and `trayIconConfigured=<value>`.
+- `--status` reports reload/exit request paths, pending marker status, runtime path, and runtime last write time.
+
+Still missing:
+- Last successful reload timestamp separate from runtime file timestamp.
 
 ## Safety checklist before testing
 
@@ -303,4 +291,4 @@ Still missing:
 
 ## Known current status
 
-RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The project now has modular hook/worker geometry, restore metadata, snapping, advanced rules, diagnostics, config reload, safe exit request, preview overlay, preview-only commit mode, config validation, snap scoring, no-tray default UX, standalone settings UI, and a basic rule-list editor. The next high-value area is rule validation, reset-to-defaults, and status output for current control mode.
+RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The project now has modular hook/worker geometry, restore metadata, snapping, advanced rules, diagnostics, config reload, safe exit request, preview overlay, preview-only commit mode, config validation, snap scoring, no-tray default UX, standalone settings UI, rule-list editing, rule validation, reset-to-defaults, and status/control-mode reporting. The next high-value area is inline rule validation, reset confirmations, and separate last successful reload tracking.
