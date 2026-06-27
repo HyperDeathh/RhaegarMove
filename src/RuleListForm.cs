@@ -15,17 +15,19 @@ namespace RhaegarMove
         private TextBox snapList;
         private TextBox noSizingNotify;
         private TextBox noResize;
+        private Label validationLabel;
 
         public RuleListForm(Action afterSave)
         {
             this.afterSave = afterSave;
             Text = "RhaegarMove Window Rules";
             StartPosition = FormStartPosition.CenterScreen;
-            Size = new Size(720, 660);
+            Size = new Size(720, 720);
             MinimizeBox = false;
             MaximizeBox = false;
             BuildUi();
             LoadValues();
+            UpdateValidation();
         }
 
         private void BuildUi()
@@ -33,7 +35,7 @@ namespace RhaegarMove
             TableLayoutPanel root = new TableLayoutPanel();
             root.Dock = DockStyle.Fill;
             root.ColumnCount = 1;
-            root.RowCount = 11;
+            root.RowCount = 12;
             root.Padding = new Padding(12);
             root.AutoScroll = true;
             Controls.Add(root);
@@ -41,16 +43,22 @@ namespace RhaegarMove
             classes = AddBox(root, "Classes");
             processes = AddBox(root, "Processes");
             titles = AddBox(root, "Titles");
-            rules = AddBox(root, "Rules  process:title|class");
+            rules = AddBox(root, "Rules  example: process.exe:*Title*|WindowClass");
             snapList = AddBox(root, "SnapList  allow-list, empty means all eligible windows");
-            noSizingNotify = AddBox(root, "NoSizingNotify");
-            noResize = AddBox(root, "NoResize");
+            noSizingNotify = AddBox(root, "NoSizingNotify  example: app.exe:*|*");
+            noResize = AddBox(root, "NoResize  example: app.exe:*|*");
 
             Label note = new Label();
             note.Text = "Comma-separated wildcard patterns. Keep shell/taskbar/start menu rules unless you know why you are changing them.";
             note.AutoSize = true;
             note.Dock = DockStyle.Fill;
             root.Controls.Add(note);
+
+            validationLabel = new Label();
+            validationLabel.AutoSize = true;
+            validationLabel.Dock = DockStyle.Fill;
+            validationLabel.MaximumSize = new Size(660, 0);
+            root.Controls.Add(validationLabel);
 
             Button reset = new Button();
             reset.Text = "Reset default window rules";
@@ -80,6 +88,7 @@ namespace RhaegarMove
             t.Height = 48;
             t.ScrollBars = ScrollBars.Vertical;
             t.Dock = DockStyle.Fill;
+            t.TextChanged += delegate { UpdateValidation(); };
             root.Controls.Add(t);
             return t;
         }
@@ -102,15 +111,33 @@ namespace RhaegarMove
             return values.TryGetValue(key, out value) ? value : string.Empty;
         }
 
+        private void UpdateValidation()
+        {
+            if (validationLabel == null || classes == null)
+                return;
+            string report = RuleValidation.BuildReport(CurrentValues()).Trim();
+            validationLabel.Text = report == "- none" ? "Rule validation: no warnings" : "Rule validation warnings:\r\n" + report;
+        }
+
         private void SaveAndReload()
         {
-            ConfigFileUpdater.SetBlacklistValues(CurrentValues());
+            Dictionary<string, string> values = CurrentValues();
+            if (RuleValidation.HasWarnings(values))
+            {
+                DialogResult result = MessageBox.Show(this, "Rule validation has warnings. Save anyway?", "RhaegarMove", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (result != DialogResult.Yes)
+                    return;
+            }
+            ConfigFileUpdater.SetBlacklistValues(values);
             if (afterSave != null) afterSave();
             Close();
         }
 
         private void ResetDefaults()
         {
+            DialogResult result = MessageBox.Show(this, "Reset window rules to safe defaults?", "RhaegarMove", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result != DialogResult.Yes)
+                return;
             ConfigFileUpdater.SetBlacklistValues(ConfigDefaults.Blacklist());
             LoadValues();
             if (afterSave != null) afterSave();
