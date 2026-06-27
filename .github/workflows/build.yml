@@ -39,5 +39,6 @@ jobs:
             snap_score.bat
             minmax_report.bat
             dpi_snap_report.bat
+            verify_build.bat
             config_report.bat
           if-no-files-found: error
