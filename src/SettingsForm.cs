@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Text;
 using System.Windows.Forms;
 
 namespace RhaegarMove
@@ -24,18 +25,20 @@ namespace RhaegarMove
         private CheckBox enableSnapDiagnostics;
         private CheckBox enableTrayIcon;
         private CheckBox stickyResize;
+        private Label warningLabel;
 
         public SettingsForm(Action afterSave)
         {
             this.afterSave = afterSave;
             Text = "RhaegarMove Settings";
             StartPosition = FormStartPosition.CenterScreen;
-            Size = new Size(460, 620);
+            Size = new Size(500, 720);
             MinimizeBox = false;
             MaximizeBox = false;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             BuildUi();
             LoadValues(AppSettings.Load());
+            UpdateWarnings();
         }
 
         private void BuildUi()
@@ -43,7 +46,7 @@ namespace RhaegarMove
             TableLayoutPanel root = new TableLayoutPanel();
             root.Dock = DockStyle.Fill;
             root.ColumnCount = 2;
-            root.RowCount = 20;
+            root.RowCount = 24;
             root.Padding = new Padding(12);
             root.AutoScroll = true;
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55));
@@ -65,22 +68,37 @@ namespace RhaegarMove
             enablePreviewOnlySnap = AddCheck(root, "EnablePreviewOnlySnap");
             enableRuleDiagnostics = AddCheck(root, "EnableRuleDiagnostics");
             enableSnapDiagnostics = AddCheck(root, "EnableSnapDiagnostics");
-            enableTrayIcon = AddCheck(root, "EnableTrayIcon");
+            enableTrayIcon = AddCheck(root, "EnableTrayIcon optional");
             stickyResize = AddCheck(root, "StickyResize");
+
+            Button rules = new Button();
+            rules.Text = "Edit window rules...";
+            rules.Dock = DockStyle.Fill;
+            rules.Height = 32;
+            rules.Click += delegate { new RuleListForm(afterSave).ShowDialog(this); };
+            root.Controls.Add(rules, 0, root.RowCount - 5);
+            root.SetColumnSpan(rules, 2);
+
+            warningLabel = new Label();
+            warningLabel.AutoSize = true;
+            warningLabel.Dock = DockStyle.Fill;
+            warningLabel.MaximumSize = new Size(440, 0);
+            root.Controls.Add(warningLabel, 0, root.RowCount - 4);
+            root.SetColumnSpan(warningLabel, 2);
 
             Button save = new Button();
             save.Text = "Save and reload";
             save.Dock = DockStyle.Fill;
             save.Height = 32;
             save.Click += delegate { SaveAndReload(); };
-            root.Controls.Add(save, 0, root.RowCount - 2);
+            root.Controls.Add(save, 0, root.RowCount - 3);
             root.SetColumnSpan(save, 2);
 
             Label note = new Label();
-            note.Text = "Advanced options stay opt-in. Keep stop.bat as emergency fallback.";
+            note.Text = "Tray icon is optional and disabled by default. Keep stop.bat as emergency fallback.";
             note.AutoSize = true;
             note.Dock = DockStyle.Fill;
-            root.Controls.Add(note, 0, root.RowCount - 1);
+            root.Controls.Add(note, 0, root.RowCount - 2);
             root.SetColumnSpan(note, 2);
         }
 
@@ -94,6 +112,7 @@ namespace RhaegarMove
             n.Minimum = min;
             n.Maximum = max;
             n.Dock = DockStyle.Fill;
+            n.ValueChanged += delegate { UpdateWarnings(); };
             root.Controls.Add(l);
             root.Controls.Add(n);
             return n;
@@ -105,6 +124,7 @@ namespace RhaegarMove
             c.Text = label;
             c.AutoSize = true;
             c.Dock = DockStyle.Fill;
+            c.CheckedChanged += delegate { UpdateWarnings(); };
             root.Controls.Add(c);
             root.SetColumnSpan(c, 2);
             return c;
@@ -128,6 +148,20 @@ namespace RhaegarMove
             enableSnapDiagnostics.Checked = s.EnableSnapDiagnostics;
             enableTrayIcon.Checked = s.EnableTrayIcon;
             stickyResize.Checked = s.StickyResize;
+        }
+
+        private void UpdateWarnings()
+        {
+            if (warningLabel == null) return;
+            StringBuilder b = new StringBuilder();
+            if (snapThreshold != null && snapThreshold.Value == 0) b.AppendLine("- SnapThreshold=0 makes practical snap matching nearly disabled.");
+            if (snapThreshold != null && snapThreshold.Value > 64) b.AppendLine("- High SnapThreshold may feel too sticky.");
+            if (stickyResize != null && stickyResize.Checked) b.AppendLine("- StickyResize can resize adjacent windows too.");
+            if (enablePreviewOnlySnap != null && enablePreviewOnlySnap.Checked) b.AppendLine("- PreviewOnlySnap delays movement until mouse release.");
+            if (enablePreviewOverlay != null && enablePreviewOverlay.Checked) b.AppendLine("- PreviewOverlay shows a topmost outline window.");
+            if (enableSnapDiagnostics != null && enableSnapDiagnostics.Checked) b.AppendLine("- Snap diagnostics rewrites report files frequently during gestures.");
+            if (enableTrayIcon != null && enableTrayIcon.Checked) b.AppendLine("- Tray icon is optional; default is off.");
+            warningLabel.Text = b.Length == 0 ? "Warnings: none" : "Warnings:\r\n" + b.ToString();
         }
 
         private void SaveAndReload()
