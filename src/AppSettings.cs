@@ -48,6 +48,40 @@ namespace RhaegarMove
             return s.Normalize();
         }
 
+        public void ReloadFromDisk()
+        {
+            AppSettings fresh = Load();
+            CopyFrom(fresh);
+        }
+
+        private void CopyFrom(AppSettings s)
+        {
+            SnapThreshold = s.SnapThreshold;
+            MinWidth = s.MinWidth;
+            MinHeight = s.MinHeight;
+            MaxWidth = s.MaxWidth;
+            MaxHeight = s.MaxHeight;
+            WatchdogMs = s.WatchdogMs;
+            EnableEdgeSnap = s.EnableEdgeSnap;
+            EnableAeroSnap = s.EnableAeroSnap;
+            AeroThreshold = s.AeroThreshold;
+            AutoSnap = s.AutoSnap;
+            SnapGap = s.SnapGap;
+            ResizeCenterMode = s.ResizeCenterMode;
+            CenterFraction = s.CenterFraction;
+            SidesFraction = s.SidesFraction;
+            AeroMaxSpeed = s.AeroMaxSpeed;
+            AeroSpeedTau = s.AeroSpeedTau;
+            SnapToWindows = s.SnapToWindows;
+            StickyResize = s.StickyResize;
+            EnableRuleDiagnostics = s.EnableRuleDiagnostics;
+            EnablePreviewState = s.EnablePreviewState;
+            EnablePreviewOverlay = s.EnablePreviewOverlay;
+            AllowFullScreenWindows = s.AllowFullScreenWindows;
+            SkipMaximizedWindows = s.SkipMaximizedWindows;
+            NotifyMoveSizeEvents = s.NotifyMoveSizeEvents;
+        }
+
         private void Apply(string key, string value)
         {
             if (key.Equals("SnapThreshold", StringComparison.OrdinalIgnoreCase)) SnapThreshold = ToInt(value, SnapThreshold);
