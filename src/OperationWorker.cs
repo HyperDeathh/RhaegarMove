@@ -53,6 +53,7 @@ namespace RhaegarMove
                 state.Kind = kind;
                 state.StartMouse = pt;
                 state.StartRect = rect;
+                state.LastRect = rect;
                 state.Edge = kind == OperationKind.Resize ? ResizeEdge.FromPoint(rect, pt, settings) : ResizeEdge.None;
                 state.LastPoint = pt;
                 state.LastTick = Stopwatch.GetTimestamp();
@@ -147,10 +148,17 @@ namespace RhaegarMove
                 snapshot = state.Clone();
             }
 
+            RECT result = snapshot.StartRect;
             if (snapshot.Kind == OperationKind.Move)
-                UpdateMove(snapshot, pt, speed);
+                result = UpdateMove(snapshot, pt, speed);
             else if (snapshot.Kind == OperationKind.Resize)
-                UpdateResize(snapshot, pt);
+                result = UpdateResize(snapshot, pt);
+
+            lock (gate)
+            {
+                if (state.Active && state.Target == snapshot.Target)
+                    state.LastRect = result;
+            }
         }
 
         private int UpdateSpeedLocked(POINT pt)
@@ -166,7 +174,7 @@ namespace RhaegarMove
             return (int)(dist * settings.AeroSpeedTau / Math.Max(1.0, elapsedMs));
         }
 
-        private void UpdateMove(OperationState s, POINT pt, int speed)
+        private RECT UpdateMove(OperationState s, POINT pt, int speed)
         {
             int dx = pt.x - s.StartMouse.x;
             int dy = pt.y - s.StartMouse.y;
@@ -176,11 +184,13 @@ namespace RhaegarMove
             int y = s.StartRect.top + dy;
 
             SnapEngine.TryApplyMoveSnap(s.Target, pt, ref x, ref y, ref width, ref height, s.StartRect, settings, speed);
-            NativeMethods.SetWindowPos(s.Target, IntPtr.Zero, x, y, width, height,
+            RECT result = new RECT(x, y, x + width, y + height);
+            NativeMethods.SetWindowPos(s.Target, IntPtr.Zero, result.left, result.top, result.Width, result.Height,
                 NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
+            return result;
         }
 
-        private void UpdateResize(OperationState s, POINT pt)
+        private RECT UpdateResize(OperationState s, POINT pt)
         {
             RECT desired = ResizeEngine.Calculate(s.StartRect, s.StartMouse, pt, s.Edge, settings);
             if (!s.Edge.MoveInstead)
@@ -189,9 +199,14 @@ namespace RhaegarMove
                 WindowController.SendSizing(s.Target, s.Edge, ref desired);
             }
 
-            NativeMethods.SetWindowPos(s.Target, IntPtr.Zero, desired.left, desired.top,
-                Math.Max(settings.MinWidth, desired.Width), Math.Max(settings.MinHeight, desired.Height),
+            desired = new RECT(desired.left, desired.top, desired.left + Math.Max(settings.MinWidth, desired.Width), desired.top + Math.Max(settings.MinHeight, desired.Height));
+            NativeMethods.SetWindowPos(s.Target, IntPtr.Zero, desired.left, desired.top, desired.Width, desired.Height,
                 NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
+
+            if (!s.Edge.MoveInstead)
+                SnapEngine.ApplyStickyResize(s.Target, s.LastRect, desired, s.Edge, settings);
+
+            return desired;
         }
 
         public void Dispose()
@@ -214,6 +229,7 @@ namespace RhaegarMove
             public OperationKind Kind;
             public POINT StartMouse;
             public RECT StartRect;
+            public RECT LastRect;
             public ResizeEdge Edge;
             public POINT LastPoint;
             public long LastTick;
