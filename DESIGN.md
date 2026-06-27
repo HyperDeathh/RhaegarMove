@@ -50,13 +50,16 @@ The source is modular:
 - `DpiHelper.cs`: DPI lookup and restore-size scaling helpers.
 - `ResizeEngine.cs`: resize-region selection and rectangle calculation.
 - `SizingConstraints.cs`: config-based min/max size clamping.
+- `ConfigValidation.cs`: startup/reload config validation and warning report.
 - `RuleDiagnostics.cs`: rule decision snapshots for debugging.
 - `RuntimeCommands.cs`: command-line diagnostics and runtime control helpers.
 - `RuntimeControl.cs`: file-based reload and exit request markers.
+- `RuntimeWatcher.cs`: file watcher for runtime request markers.
 - `SnapDiagnostics.cs`: snap target accept/reject report writer.
+- `SnapScoreDiagnostics.cs`: per-edge candidate scoring report writer.
 - `SnapPreview.cs`: preview-state snapshots for future outline UI.
 - `PreviewOverlay.cs`: optional transparent outline overlay, disabled by default.
-- `SnapEngine.cs`: monitor snapping, Aero-style snapping, window-edge snapping, sticky resize basics, and snap target diagnostics.
+- `SnapEngine.cs`: monitor snapping, Aero-style snapping, window-edge snapping, sticky resize basics, snap target diagnostics, and per-edge scoring diagnostics.
 - `WindowRestoreStore.cs`: SetProp/GetProp restore metadata with an in-process fallback dictionary.
 - `AppSettings.cs`: typed INI option loader with in-place reload.
 
@@ -133,8 +136,6 @@ Status: done for the active build.
 - Main logic has been split into focused source files.
 - `build.bat` compiles `src\*.cs` directly.
 - `tools/Prepare-Source.ps1` is no longer called by the build.
-
-Note: the retired script file may still exist in the repository if GitHub content deletion is blocked, but it is not part of the build path.
 
 ### Phase 8: operation worker and state machine
 
@@ -281,7 +282,7 @@ Still missing:
 
 ### Phase 19: config reload
 
-Status: started.
+Status: in progress.
 
 - `AppSettings` supports in-place reload.
 - `WindowRules.Reload()` resets and reloads cached rule lists.
@@ -290,12 +291,11 @@ Status: started.
 
 Still missing:
 
-- Validation report for bad config values.
 - Atomic reload outcome summary by section.
 
 ### Phase 20: safe exit request
 
-Status: started.
+Status: in progress.
 
 - `RuntimeControl` provides an `exit.request` marker file.
 - App loop consumes exit requests and exits through `ApplicationContext.ExitThread()`.
@@ -308,17 +308,53 @@ Still missing:
 
 ### Phase 21: snap target diagnostics
 
-Status: started.
+Status: in progress.
 
 - `EnableSnapDiagnostics=false` by default.
 - `SnapDiagnostics` writes accepted and rejected snap targets to `%LOCALAPPDATA%\RhaegarMove\snap-targets.txt`.
 - Rejection reasons include active window, hidden, minimized, ignored by rule, not in SnapList, noactivate, no caption/thickframe, and empty rect.
 - `snap_targets.bat` displays the last snap target report.
 
+### Phase 22: config validation report
+
+Status: started.
+
+- `ConfigValidation` writes `%LOCALAPPDATA%\RhaegarMove\config-report.txt` at startup and reload.
+- The report includes normalized values and warnings for advanced/risky options.
+- `config_report.bat` displays the last config report.
+
 Still missing:
 
-- Per-edge snap candidate scoring report.
-- Best-candidate explanation for the final snap decision.
+- Exact raw-to-normalized value diff for each config line.
+- Unknown-key warnings.
+
+### Phase 23: stronger runtime control watcher
+
+Status: started.
+
+- `RuntimeWatcher` uses `FileSystemWatcher` to notice `reload.request` and `exit.request` files.
+- The app loop still consumes marker files as fallback, so missed watcher events do not break control.
+- This keeps the simple request-file model while reducing latency.
+
+Still missing:
+
+- Named pipe or window-message control channel.
+- Request authentication/nonce if needed later.
+
+### Phase 24: per-edge snap scoring diagnostics
+
+Status: started.
+
+- `SnapScoreDiagnostics` writes `%LOCALAPPDATA%\RhaegarMove\snap-score.txt` when `EnableSnapDiagnostics=true`.
+- Move snap scoring records candidate edge labels, delta, absolute distance, threshold membership, and best candidate.
+- Resize snap scoring records candidate edges for the active resize side.
+- `snap_score.bat` displays the last snap score report.
+
+Still missing:
+
+- Separate X/Y best candidates in the summary.
+- Scoring for monitor-edge snap candidates.
+- More detailed final snap decision explanation after all transforms.
 
 ## Safety checklist before testing
 
@@ -330,4 +366,4 @@ Still missing:
 
 ## Known current status
 
-RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code is now modular and has the correct direction: worker boundary, restore metadata, snap-to-window basics, advanced rules, DPI-aware restore, sticky resize infrastructure, config-based min/max sizing, runtime diagnostics, optional UI-thread-safe preview overlay, config reload, safe exit request, and snap target diagnostics. The next high-value area is a stronger control channel, config validation reporting, and per-edge snap scoring diagnostics.
+RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code is now modular and has the correct direction: worker boundary, restore metadata, snap-to-window basics, advanced rules, DPI-aware restore, sticky resize infrastructure, config-based min/max sizing, runtime diagnostics, optional UI-thread-safe preview overlay, config reload, safe exit request, snap target diagnostics, config validation reports, runtime watcher support, and per-edge snap scoring diagnostics. The next high-value area is unknown-key config validation, monitor-edge scoring, and a real local control channel.
