@@ -69,15 +69,36 @@ namespace RhaegarMove
         private sealed class AppLoop : ApplicationContext
         {
             private readonly OperationWorker worker;
+            private readonly AppSettings settings;
             private readonly Timer watchdog;
 
             public AppLoop(OperationWorker worker, AppSettings settings)
             {
                 this.worker = worker;
+                this.settings = settings;
                 watchdog = new Timer();
                 watchdog.Interval = Math.Max(100, settings.WatchdogMs);
-                watchdog.Tick += delegate { this.worker.Watchdog(); };
+                watchdog.Tick += delegate { OnTick(); };
                 watchdog.Start();
+            }
+
+            private void OnTick()
+            {
+                worker.Watchdog();
+
+                if (RuntimeControl.ConsumeReloadRequest())
+                {
+                    settings.ReloadFromDisk();
+                    WindowRules.Reload();
+                    watchdog.Interval = Math.Max(100, settings.WatchdogMs);
+                    RuntimeControl.WriteRuntime("reload applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                }
+
+                if (RuntimeControl.ConsumeExitRequest())
+                {
+                    RuntimeControl.WriteRuntime("exit applied " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                    ExitThread();
+                }
             }
 
             protected override void Dispose(bool disposing)
