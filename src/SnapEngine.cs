@@ -17,6 +17,7 @@ namespace RhaegarMove
         {
             LastRestoreFlags = 0;
             bool changed = false;
+            RECT before = new RECT(x, y, x + width, y + height);
 
             if (settings.EnableAeroSnap && speed <= settings.AeroMaxSpeed)
             {
@@ -31,6 +32,11 @@ namespace RhaegarMove
                     width = Math.Max(settings.MinWidth, aero.Width);
                     height = Math.Max(settings.MinHeight, aero.Height);
                     LastRestoreFlags = flags;
+                    if (settings.EnableSnapDiagnostics)
+                    {
+                        SnapScoreDiagnostics.BeginSession(settings, "move-aero");
+                        SnapScoreDiagnostics.FinalDecision(settings, "move-aero", before, new RECT(x, y, x + width, y + height));
+                    }
                     return true;
                 }
             }
@@ -39,7 +45,7 @@ namespace RhaegarMove
                 return false;
 
             SnapScoreDiagnostics.BeginSession(settings, "move");
-            RECT desired = new RECT(x, y, x + width, y + height);
+            RECT desired = before;
             int threshold = Math.Max(0, settings.SnapThreshold);
             SnapToMonitorEdges(ref desired, pt, threshold, settings.SnapGap, settings);
 
@@ -56,6 +62,7 @@ namespace RhaegarMove
                 changed = true;
             }
 
+            SnapScoreDiagnostics.FinalDecision(settings, "move", before, desired);
             return changed;
         }
 
@@ -64,6 +71,7 @@ namespace RhaegarMove
             if (!settings.EnableEdgeSnap || settings.AutoSnap <= 0)
                 return;
 
+            RECT before = desired;
             SnapScoreDiagnostics.BeginSession(settings, "resize");
             int threshold = Math.Max(0, settings.SnapThreshold);
             SnapResizeToMonitor(ref desired, edge, threshold, settings.SnapGap, settings);
@@ -73,6 +81,8 @@ namespace RhaegarMove
                 List<SnapTarget> targets = CollectTargets(hwnd, settings);
                 SnapResizeToWindows(ref desired, edge, targets, threshold, settings.SnapGap, settings.AutoSnap >= 3, settings);
             }
+
+            SnapScoreDiagnostics.FinalDecision(settings, "resize", before, desired);
         }
 
         public static void ApplyStickyResize(IntPtr active, RECT before, RECT after, ResizeEdge edge, AppSettings settings)
