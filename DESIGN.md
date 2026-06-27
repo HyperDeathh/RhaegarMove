@@ -10,6 +10,7 @@ This file records the design decisions for RhaegarMove without copying source co
 - Do not synthesize keyboard input.
 - Do not block unrelated input.
 - Keep all advanced behavior opt-in or diagnosable.
+- Tray icon is opt-in only; the default runtime has no tray icon.
 
 ## Why v0.1 avoids a keyboard hook
 
@@ -24,7 +25,7 @@ A global keyboard hook is easy to get wrong. If Alt key-up or injected-key state
 
 The source is modular:
 
-- `RhaegarMove.cs`: app entry, single-instance guard, watchdog lifecycle, runtime command routing, reload/exit processing, tray lifecycle.
+- `RhaegarMove.cs`: app entry, single-instance guard, watchdog lifecycle, runtime command routing, reload/exit processing.
 - `NativeMethods.cs`: Win32 constants, structs, delegates, and P/Invoke declarations.
 - `MouseHook.cs`: low-level mouse hook coordinator.
 - `OperationWorker.cs`: coalesces mouse-move operations outside the hook callback and supports preview-only commit mode.
@@ -34,14 +35,15 @@ The source is modular:
 - `DpiHelper.cs`: DPI lookup and restore-size scaling helpers.
 - `ResizeEngine.cs`: resize-region selection and rectangle calculation.
 - `SizingConstraints.cs`: config-based min/max size clamping.
-- `ConfigFileUpdater.cs`: safe `[General]` key updater for UI edits.
+- `ConfigFileUpdater.cs`: safe section key updater for UI edits.
 - `ConfigValidation.cs`: startup/reload config validation, unknown-key, duplicate-key, and normalization report.
 - `RuleDiagnostics.cs`: rule decision snapshots for debugging.
-- `RuntimeCommands.cs`: command-line diagnostics and runtime control helpers.
+- `RuntimeCommands.cs`: command-line diagnostics, settings UI launcher, and runtime control helpers.
 - `RuntimeControl.cs`: file-based reload and exit request markers.
 - `RuntimeWatcher.cs`: file watcher for runtime request markers.
-- `SettingsForm.cs`: basic WinForms settings editor for safe options.
-- `TrayIcon.cs`: notification-area menu for settings, config, reload, reports, and exit.
+- `SettingsForm.cs`: basic WinForms settings editor for safe options, with warnings.
+- `RuleListForm.cs`: basic blacklist/rule-list editor.
+- `TrayIcon.cs`: optional notification-area menu; disabled by default and not created unless enabled.
 - `SnapDiagnostics.cs`: snap target accept/reject report writer.
 - `SnapScoreDiagnostics.cs`: per-edge candidate scoring and final decision report writer.
 - `SnapPreview.cs`: preview-state snapshots for future outline UI.
@@ -89,12 +91,12 @@ Status: planned and constrained.
 Status: in progress.
 - Runtime helper scripts and diagnostics helper scripts exist.
 - GitHub Actions artifact includes helper scripts.
-- Tray icon exists with settings/config/reload/report/exit actions.
-- Basic settings form exists.
+- Basic settings form exists and can be opened without tray.
+- Tray support exists but is opt-in and disabled by default.
 
 Still missing:
-- Polished icon asset.
-- Rich settings UI for all rule lists.
+- Polished icon asset if tray is enabled.
+- Rich settings UI for all advanced options.
 
 ### Phase 7: source cleanup
 Status: done for the active build.
@@ -155,7 +157,7 @@ Status: in progress.
 
 ### Phase 17: runtime control
 Status: in progress.
-- Supported commands: `--status`, `--config-path`, `--diagnose-cursor`, `--preview-status`, `--reload`, and `--request-exit`.
+- Supported commands: `--status`, `--settings`, `--config-path`, `--diagnose-cursor`, `--preview-status`, `--reload`, and `--request-exit`.
 - Runtime command output is persisted to `%LOCALAPPDATA%\RhaegarMove\runtime.txt`.
 
 ### Phase 18: diagnostics refinement
@@ -232,20 +234,20 @@ Still missing:
 - Separate X/Y winner classification.
 
 ### Phase 30: tray/config UX start
-Status: in progress.
-- `TrayIcon` adds a notification-area icon.
-- Menu actions include config, reload, reports folder, and exit.
-- `EnableTrayIcon=true` by default.
-- Reload can update tray visibility.
+Status: revised after UX decision.
+- Tray support exists only as an optional feature.
+- `EnableTrayIcon=false` by default.
+- If disabled, `TrayIcon` avoids creating a `NotifyIcon` object.
+- Settings can be opened with `settings.bat` or `RhaegarMove.exe --settings` instead of relying on tray.
 
-### Phase 31: tray polish
-Status: started.
-- Tray tooltip reports live vs preview-only mode and snap on/off state.
+### Phase 31: optional tray polish
+Status: started but opt-in.
+- If tray is enabled, tooltip reports live vs preview-only mode and snap on/off state.
 - Tray reports submenu opens config report, rule diagnostics, snap targets, and snap score files.
 - Tray menu can open the status folder directly.
 
 Still missing:
-- Custom RhaegarMove icon.
+- Custom RhaegarMove icon if tray is enabled.
 - Last-error/status badge.
 
 ### Phase 32: final snap winner classification
@@ -257,15 +259,39 @@ Still missing:
 - Separate horizontal/vertical winner fields.
 
 ### Phase 33: settings UI start
-Status: started.
+Status: in progress.
 - `SettingsForm` provides a basic WinForms UI for safe general options.
 - `ConfigFileUpdater` rewrites known `[General]` keys while preserving unrelated config content.
 - Saving from the UI triggers the existing reload path.
+- `settings.bat` opens the settings UI without tray.
+
+### Phase 34: settings validation UI
+Status: started.
+- Settings form now shows live warnings for risky options such as high snap threshold, sticky resize, preview overlay, preview-only snap, diagnostics, and optional tray.
+- The form explicitly notes that tray is optional and disabled by default.
 
 Still missing:
-- Rule-list editor UI.
-- Validation messages inside the form.
-- Reset-to-defaults button.
+- Inline validation for rule syntax.
+- Save confirmation when multiple advanced options are enabled.
+
+### Phase 35: rule-list editor
+Status: started.
+- `RuleListForm` edits `Classes`, `Processes`, `Titles`, `Rules`, `SnapList`, `NoSizingNotify`, and `NoResize` under `[Blacklist]`.
+- `ConfigFileUpdater` can now update named sections while preserving other config content.
+- Settings form links to the rule editor.
+
+Still missing:
+- Per-rule validation and examples.
+- Restore default rules button.
+
+### Phase 36: no-tray default UX
+Status: started.
+- `EnableTrayIcon=false` in default config and fallback settings.
+- `settings.bat` is included in build artifacts.
+- Tray support remains configurable, but no tray icon is created unless explicitly enabled.
+
+Still missing:
+- Optional command to print current UI/control mode in status output.
 
 ## Safety checklist before testing
 
@@ -277,4 +303,4 @@ Still missing:
 
 ## Known current status
 
-RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The project now has modular hook/worker geometry, restore metadata, snapping, advanced rules, diagnostics, config reload, safe exit request, preview overlay, preview-only commit mode, config validation, snap scoring, tray UX, and a basic settings form. The next high-value area is tray icon polish, settings validation UI, and rule-list editing.
+RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The project now has modular hook/worker geometry, restore metadata, snapping, advanced rules, diagnostics, config reload, safe exit request, preview overlay, preview-only commit mode, config validation, snap scoring, no-tray default UX, standalone settings UI, and a basic rule-list editor. The next high-value area is rule validation, reset-to-defaults, and status output for current control mode.
