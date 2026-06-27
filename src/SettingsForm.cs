@@ -187,6 +187,9 @@ namespace RhaegarMove
 
         private void ResetGeneralDefaults()
         {
+            DialogResult result = MessageBox.Show(this, "Reset general settings to safe defaults? Tray will remain disabled by default.", "RhaegarMove", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result != DialogResult.Yes)
+                return;
             ConfigFileUpdater.SetGeneralValues(ConfigDefaults.General());
             LoadValues(AppSettings.Load());
             if (afterSave != null) afterSave();
@@ -194,6 +197,9 @@ namespace RhaegarMove
 
         private void ResetRuleDefaults()
         {
+            DialogResult result = MessageBox.Show(this, "Reset window rules to safe defaults?", "RhaegarMove", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result != DialogResult.Yes)
+                return;
             ConfigFileUpdater.SetBlacklistValues(ConfigDefaults.Blacklist());
             if (afterSave != null) afterSave();
         }
