@@ -31,10 +31,15 @@ namespace RhaegarMove
 
         public static void FinalDecision(AppSettings settings, string kind, RECT before, RECT after)
         {
-            FinalDecision(settings, kind, "unknown", before, after);
+            FinalDecision(settings, kind, "unknown", "unknown", "unknown", before, after);
         }
 
         public static void FinalDecision(AppSettings settings, string kind, string source, RECT before, RECT after)
+        {
+            FinalDecision(settings, kind, source, source, source, before, after);
+        }
+
+        public static void FinalDecision(AppSettings settings, string kind, string source, string xSource, string ySource, RECT before, RECT after)
         {
             if (!settings.EnableSnapDiagnostics)
                 return;
@@ -44,6 +49,8 @@ namespace RhaegarMove
                 b.AppendLine("---");
                 b.AppendLine("kind=" + kind + "-final");
                 b.AppendLine("source=" + source);
+                b.AppendLine("xSource=" + xSource);
+                b.AppendLine("ySource=" + ySource);
                 b.AppendLine("before=" + FormatRect(before));
                 b.AppendLine("after=" + FormatRect(after));
                 b.AppendLine("dx=" + (after.left - before.left));
