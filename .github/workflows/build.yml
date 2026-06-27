@@ -37,5 +37,6 @@ jobs:
             request_exit.bat
             snap_targets.bat
             snap_score.bat
+            minmax_report.bat
             config_report.bat
           if-no-files-found: error
