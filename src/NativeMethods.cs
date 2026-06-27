@@ -139,6 +139,7 @@ namespace RhaegarMove
 
         public const int MONITOR_DEFAULTTONEAREST = 2;
         public const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
+        public const int DWMWA_CLOAKED = 14;
 
         public const uint EVENT_SYSTEM_MOVESIZESTART = 0x000A;
         public const uint EVENT_SYSTEM_MOVESIZEEND = 0x000B;
@@ -221,6 +222,9 @@ namespace RhaegarMove
 
         [DllImport("dwmapi.dll")]
         public static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out RECT rect, int size);
+
+        [DllImport("dwmapi.dll", EntryPoint = "DwmGetWindowAttribute")]
+        public static extern int DwmGetWindowAttributeInt(IntPtr hwnd, int attribute, out int value, int size);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern bool SetProp(IntPtr hwnd, string name, IntPtr data);
