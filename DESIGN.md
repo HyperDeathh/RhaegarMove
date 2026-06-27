@@ -47,6 +47,9 @@ The source is now modular:
 - `Geometry.cs`: DWM bounds, monitor work area, input state helpers.
 - `DpiHelper.cs`: DPI lookup and restore-size scaling helpers.
 - `ResizeEngine.cs`: resize-region selection and rectangle calculation.
+- `SizingConstraints.cs`: config-based min/max size clamping.
+- `RuleDiagnostics.cs`: rule decision snapshots for debugging.
+- `SnapPreview.cs`: preview-state snapshots for future outline UI.
 - `SnapEngine.cs`: monitor snapping, Aero-style snapping, window-edge snapping, and sticky resize basics.
 - `WindowRestoreStore.cs`: SetProp/GetProp restore metadata with an in-process fallback dictionary.
 - `AppSettings.cs`: typed INI option loader.
@@ -94,10 +97,6 @@ Status: in progress.
 - Symmetric center resize exists.
 - Resize still sends sizing messages during resize.
 
-Still missing:
-
-- More complete min/max sizing behavior.
-
 ### Phase 5: optional advanced input
 
 Status: planned and constrained.
@@ -118,7 +117,6 @@ Still missing:
 
 - Tray UI.
 - Config UI.
-- Runtime logging.
 - Runtime reload command.
 
 ### Phase 7: source cleanup
@@ -144,7 +142,6 @@ Status: in progress.
 
 Still missing:
 
-- More detailed state telemetry.
 - Explicit cancel hotkey, intentionally deferred because there is no keyboard hook yet.
 
 ### Phase 9: restore metadata and window snap
@@ -162,7 +159,7 @@ Still missing:
 
 ### Phase 10: advanced window rules
 
-Status: started.
+Status: in progress.
 
 - `WindowRules` supports composite `process:title|class` rules.
 - `Rules` can block fragile windows.
@@ -173,14 +170,13 @@ Status: started.
 Still missing:
 
 - Dedicated per-action allow/deny lists for every future action.
-- UI or command to inspect the rule that matched a window.
 
 ### Phase 11: DPI-aware restore
 
-Status: started.
+Status: in progress.
 
 - `DpiHelper` reads per-window DPI when available.
-- Restore metadata now stores the DPI used when the restore size was captured.
+- Restore metadata stores the DPI used when the restore size was captured.
 - Restore size is scaled when dragging a snapped/maximized window on a monitor with different DPI.
 
 Still missing:
@@ -190,17 +186,54 @@ Still missing:
 
 ### Phase 12: smart snap and sticky resize
 
-Status: started.
+Status: in progress.
 
 - `StickyResize` setting exists and is disabled by default.
 - `SnapEngine.ApplyStickyResize` can adjust adjacent snap targets when the active window is resized.
-- Worker now passes previous/current rectangles to the sticky resize path.
+- Worker passes previous/current rectangles to the sticky resize path.
 
 Still missing:
 
 - Smarter neighbor selection when multiple windows touch the same edge.
 - Protection against tiny adjacent windows being over-shrunk beyond their app-specific constraints.
-- Preview outline before committing smart/sticky changes.
+
+### Phase 13: min/max sizing
+
+Status: started.
+
+- `SizingConstraints` applies config-based min/max clamping after move and resize calculations.
+- `MaxWidth` and `MaxHeight` settings exist. A value of `0` means unlimited.
+- Oversized rectangles are kept inside monitor work area when they exceed the work area.
+
+Still missing:
+
+- Native app-specific `WM_GETMINMAXINFO` querying. The first interop attempt was blocked by tooling, so this remains a later isolated task.
+
+### Phase 14: rule diagnostics
+
+Status: started.
+
+- `RuleDiagnostics` can write a decision snapshot to `%LOCALAPPDATA%\RhaegarMove\rules.txt`.
+- `EnableRuleDiagnostics=false` by default.
+- When enabled, gesture start writes class/title and ignore/snap/resize decisions for the selected window.
+
+Still missing:
+
+- Exact matched-rule name in diagnostics.
+- CLI command to dump diagnostics for the window under cursor.
+
+### Phase 15: preview and outline foundation
+
+Status: started.
+
+- `SnapPreview` records the latest move/resize target rectangle to `%LOCALAPPDATA%\RhaegarMove\preview.txt`.
+- `EnablePreviewState=false` by default.
+- Worker records preview state before applying the move/resize.
+
+Still missing:
+
+- Actual transparent outline overlay.
+- Preview-only mode that does not commit snap until mouse release.
 
 ## Safety checklist before testing
 
@@ -212,4 +245,4 @@ Still missing:
 
 ## Known current status
 
-RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code is now modular and has the correct direction: worker boundary, restore metadata, snap-to-window basics, advanced rules, DPI-aware restore, and sticky resize infrastructure. The next high-value area is min/max sizing, rule diagnostics, and optional preview/outline behavior.
+RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code is now modular and has the correct direction: worker boundary, restore metadata, snap-to-window basics, advanced rules, DPI-aware restore, sticky resize infrastructure, config-based min/max sizing, and debug/preview state hooks. The next high-value area is a real preview overlay, better rule diagnostics, and isolated native min/max querying.
