@@ -19,6 +19,22 @@ namespace RhaegarMove
         private static List<WindowRule> noSizingNotifyRules;
         private static List<WindowRule> noResizeRules;
 
+        public static void Reload()
+        {
+            lock (Gate)
+            {
+                loaded = false;
+                classPatterns = null;
+                processPatterns = null;
+                titlePatterns = null;
+                compositeRules = null;
+                snapListRules = null;
+                noSizingNotifyRules = null;
+                noResizeRules = null;
+            }
+            EnsureLoaded();
+        }
+
         public static bool ShouldIgnoreWindow(IntPtr hwnd, string className)
         {
             EnsureLoaded();
