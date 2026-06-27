@@ -30,4 +30,6 @@ jobs:
             stop.bat
             status.bat
             open_config.bat
+            diagnose_cursor.bat
+            preview_status.bat
           if-no-files-found: error
