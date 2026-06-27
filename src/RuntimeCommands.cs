@@ -78,6 +78,7 @@ namespace RhaegarMove
                 "snapTargets=" + Path.Combine(local, "snap-targets.txt") + Environment.NewLine +
                 "snapScore=" + Path.Combine(local, "snap-score.txt") + Environment.NewLine +
                 "minmax=" + Path.Combine(local, "minmax.txt") + Environment.NewLine +
+                "dpiSnap=" + Path.Combine(local, "dpi-snap.txt") + Environment.NewLine +
                 "runtime=" + RuntimeControl.RuntimePath + Environment.NewLine +
                 "runtimeLastWrite=" + LastWrite(RuntimeControl.RuntimePath) + Environment.NewLine +
                 "lastReloadFile=" + RuntimeControl.LastReloadPath + Environment.NewLine +
