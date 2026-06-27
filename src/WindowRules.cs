@@ -22,12 +22,9 @@ namespace RhaegarMove
         public static bool ShouldIgnoreWindow(IntPtr hwnd, string className)
         {
             EnsureLoaded();
-            if (hwnd == IntPtr.Zero)
-                return true;
-
+            if (hwnd == IntPtr.Zero) return true;
             string title = GetTitle(hwnd);
             string processName = GetProcessName(hwnd);
-
             if (MatchesAny(classPatterns, className)) return true;
             if (MatchesAny(titlePatterns, title)) return true;
             if (MatchesAny(processPatterns, processName)) return true;
@@ -38,8 +35,7 @@ namespace RhaegarMove
         public static bool ShouldSnapToWindow(IntPtr hwnd, string className)
         {
             EnsureLoaded();
-            if (snapListRules.Count == 0)
-                return true;
+            if (snapListRules.Count == 0) return true;
             string title = GetTitle(hwnd);
             string processName = GetProcessName(hwnd);
             return MatchesAny(snapListRules, processName, title, className);
@@ -48,8 +44,7 @@ namespace RhaegarMove
         public static bool ShouldSendSizingNotifications(IntPtr hwnd, string className)
         {
             EnsureLoaded();
-            if (noSizingNotifyRules.Count == 0)
-                return true;
+            if (noSizingNotifyRules.Count == 0) return true;
             string title = GetTitle(hwnd);
             string processName = GetProcessName(hwnd);
             return !MatchesAny(noSizingNotifyRules, processName, title, className);
@@ -58,20 +53,71 @@ namespace RhaegarMove
         public static bool ShouldAllowResize(IntPtr hwnd, string className)
         {
             EnsureLoaded();
-            if (noResizeRules.Count == 0)
-                return true;
+            if (noResizeRules.Count == 0) return true;
             string title = GetTitle(hwnd);
             string processName = GetProcessName(hwnd);
             return !MatchesAny(noResizeRules, processName, title, className);
+        }
+
+        public static string ExplainWindow(IntPtr hwnd, string className)
+        {
+            EnsureLoaded();
+            if (hwnd == IntPtr.Zero) return "window=none";
+
+            string title = GetTitle(hwnd);
+            string processName = GetProcessName(hwnd);
+            string ignoredBy = FirstIgnoreMatch(processName, title, className);
+            string snapBy = snapListRules.Count == 0 ? "allow:SnapList empty" : FirstRuleMatch(snapListRules, processName, title, className, "SnapList");
+            string noSizingBy = FirstRuleMatch(noSizingNotifyRules, processName, title, className, "NoSizingNotify");
+            string noResizeBy = FirstRuleMatch(noResizeRules, processName, title, className, "NoResize");
+
+            return
+                "process=" + processName + Environment.NewLine +
+                "class=" + className + Environment.NewLine +
+                "title=" + title + Environment.NewLine +
+                "ignoredBy=" + ignoredBy + Environment.NewLine +
+                "snapDecision=" + (snapBy.Length == 0 ? "deny:no SnapList match" : snapBy) + Environment.NewLine +
+                "sizingNotifyBlockedBy=" + (noSizingBy.Length == 0 ? "none" : noSizingBy) + Environment.NewLine +
+                "resizeBlockedBy=" + (noResizeBy.Length == 0 ? "none" : noResizeBy) + Environment.NewLine;
+        }
+
+        private static string FirstIgnoreMatch(string processName, string title, string className)
+        {
+            string match = FirstStringMatch(classPatterns, className, "Classes");
+            if (match.Length > 0) return match;
+            match = FirstStringMatch(titlePatterns, title, "Titles");
+            if (match.Length > 0) return match;
+            match = FirstStringMatch(processPatterns, processName, "Processes");
+            if (match.Length > 0) return match;
+            match = FirstRuleMatch(compositeRules, processName, title, className, "Rules");
+            if (match.Length > 0) return match;
+            return "none";
+        }
+
+        private static string FirstStringMatch(List<string> patterns, string value, string label)
+        {
+            if (value == null) value = string.Empty;
+            for (int i = 0; i < patterns.Count; i++)
+            {
+                if (WildcardMatch(value, patterns[i])) return label + ":" + patterns[i];
+            }
+            return string.Empty;
+        }
+
+        private static string FirstRuleMatch(List<WindowRule> rules, string process, string title, string cls, string label)
+        {
+            for (int i = 0; i < rules.Count; i++)
+            {
+                if (rules[i].Matches(process, title, cls)) return label + ":" + rules[i].Raw;
+            }
+            return string.Empty;
         }
 
         private static void EnsureLoaded()
         {
             lock (Gate)
             {
-                if (loaded)
-                    return;
-
+                if (loaded) return;
                 classPatterns = new List<string> { "Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "Button", "#32768", "TaskSwitcherWnd", "TaskSwitcherOverlayWnd", "MultitaskingViewFrame", "NotifyIconOverflowWindow" };
                 processPatterns = new List<string> { "StartMenuExperienceHost.exe", "SearchApp.exe", "TextInputHost.exe", "ShellExperienceHost.exe", "dwm.exe" };
                 titlePatterns = new List<string> { "Program Manager" };
@@ -79,11 +125,8 @@ namespace RhaegarMove
                 snapListRules = new List<WindowRule>();
                 noSizingNotifyRules = new List<WindowRule>();
                 noResizeRules = new List<WindowRule>();
-
                 string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RhaegarMove.ini");
-                if (File.Exists(path))
-                    LoadIniRules(path);
-
+                if (File.Exists(path)) LoadIniRules(path);
                 loaded = true;
             }
         }
@@ -101,13 +144,10 @@ namespace RhaegarMove
                     continue;
                 }
                 if (!section.Equals("Blacklist", StringComparison.OrdinalIgnoreCase)) continue;
-
                 int eq = line.IndexOf('=');
                 if (eq <= 0) continue;
-
                 string key = line.Substring(0, eq).Trim();
                 string value = line.Substring(eq + 1).Trim();
-
                 if (key.Equals("Classes", StringComparison.OrdinalIgnoreCase)) AddCsv(classPatterns, value);
                 else if (key.Equals("Processes", StringComparison.OrdinalIgnoreCase)) AddCsv(processPatterns, value);
                 else if (key.Equals("Titles", StringComparison.OrdinalIgnoreCase)) AddCsv(titlePatterns, value);
@@ -162,12 +202,10 @@ namespace RhaegarMove
             if (string.IsNullOrEmpty(pattern)) return false;
             if (pattern == "*") return true;
             if (value == null) value = string.Empty;
-
             string[] parts = pattern.Split('*');
             int index = 0;
             bool anchoredStart = !pattern.StartsWith("*");
             bool anchoredEnd = !pattern.EndsWith("*");
-
             for (int i = 0; i < parts.Length; i++)
             {
                 string part = parts[i];
@@ -177,7 +215,6 @@ namespace RhaegarMove
                 if (i == 0 && anchoredStart && found != 0) return false;
                 index = found + part.Length;
             }
-
             if (anchoredEnd && parts.Length > 0)
             {
                 string last = parts[parts.Length - 1];
@@ -200,8 +237,7 @@ namespace RhaegarMove
                 uint pid;
                 GetWindowThreadProcessId(hwnd, out pid);
                 if (pid == 0) return string.Empty;
-                using (Process p = Process.GetProcessById((int)pid))
-                    return p.ProcessName + ".exe";
+                using (Process p = Process.GetProcessById((int)pid)) return p.ProcessName + ".exe";
             }
             catch
             {
@@ -214,9 +250,11 @@ namespace RhaegarMove
             private readonly string process;
             private readonly string title;
             private readonly string cls;
+            public readonly string Raw;
 
-            private WindowRule(string process, string title, string cls)
+            private WindowRule(string raw, string process, string title, string cls)
             {
+                Raw = raw;
                 this.process = string.IsNullOrEmpty(process) ? "*" : process;
                 this.title = string.IsNullOrEmpty(title) ? "*" : title;
                 this.cls = string.IsNullOrEmpty(cls) ? "*" : cls;
@@ -241,7 +279,7 @@ namespace RhaegarMove
                     title = titleClass.Substring(0, bar).Trim();
                     cls = titleClass.Substring(bar + 1).Trim();
                 }
-                return new WindowRule(process, title, cls);
+                return new WindowRule(raw, process, title, cls);
             }
 
             public bool Matches(string processName, string titleName, string className)
