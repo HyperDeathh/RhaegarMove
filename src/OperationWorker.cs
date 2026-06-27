@@ -116,6 +116,9 @@ namespace RhaegarMove
                 RECT r = state.PendingRect;
                 NativeMethods.SetWindowPos(state.Target, IntPtr.Zero, r.left, r.top, r.Width, r.Height,
                     NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOOWNERZORDER | NativeMethods.SWP_NOACTIVATE);
+
+                if (state.Kind == OperationKind.Resize && !state.Edge.MoveInstead && settings.StickyResize)
+                    SnapEngine.ApplyStickyResize(state.Target, state.LastRect, r, state.Edge, settings);
             }
 
             if (state.Target != IntPtr.Zero && NativeMethods.IsWindow(state.Target))
@@ -201,7 +204,7 @@ namespace RhaegarMove
             int y = s.StartRect.top + dy;
 
             SnapEngine.TryApplyMoveSnap(s.Target, pt, ref x, ref y, ref width, ref height, s.StartRect, settings, speed);
-            RECT result = SizingConstraints.Apply(new RECT(x, y, x + width, y + height), ResizeEdge.None, settings);
+            RECT result = SizingConstraints.ApplyAll(s.Target, new RECT(x, y, x + width, y + height), ResizeEdge.None, settings);
             result = SizingConstraints.KeepInsideWorkAreaIfHuge(result, pt);
             SnapPreview.Record("move", result, settings);
             PreviewOverlay.ShowRect(result, settings);
@@ -222,7 +225,7 @@ namespace RhaegarMove
                 WindowController.SendSizing(s.Target, s.Edge, ref desired);
             }
 
-            desired = SizingConstraints.Apply(desired, s.Edge, settings);
+            desired = SizingConstraints.ApplyAll(s.Target, desired, s.Edge, settings);
             desired = SizingConstraints.KeepInsideWorkAreaIfHuge(desired, pt);
             SnapPreview.Record("resize", desired, settings);
             PreviewOverlay.ShowRect(desired, settings);
