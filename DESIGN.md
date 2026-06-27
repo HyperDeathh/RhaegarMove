@@ -30,6 +30,26 @@ These are high-level lessons only, not copied code:
 - Send sizing messages during resize so apps can constrain their own size.
 - Keep restore/maximized behavior conservative.
 - Add watchdog cleanup so a lost input event does not leave the app in a bad state.
+- Coalesce mouse-move work outside of the hook callback.
+- Store snapped-window restore metadata so dragging a snapped window can restore to a sensible size.
+
+## Current source layout
+
+The source is now modular:
+
+- `RhaegarMove.cs`: app entry, single-instance guard, watchdog lifecycle.
+- `NativeMethods.cs`: Win32 constants, structs, delegates, and P/Invoke declarations.
+- `MouseHook.cs`: low-level mouse hook coordinator.
+- `OperationWorker.cs`: coalesces mouse-move operations outside the hook callback.
+- `WindowController.cs`: target validation, fullscreen/maximized checks, sizing notifications.
+- `WindowRules.cs`: clean-room process/class/title blacklist matching.
+- `Geometry.cs`: DWM bounds, monitor work area, input state helpers.
+- `ResizeEngine.cs`: resize-region selection and rectangle calculation.
+- `SnapEngine.cs`: monitor snapping, Aero-style snapping, and window-edge snapping.
+- `WindowRestoreStore.cs`: SetProp/GetProp restore metadata with an in-process fallback dictionary.
+- `AppSettings.cs`: typed INI option loader.
+
+`build.bat` now compiles `src\*.cs` directly. It no longer depends on generated source preparation.
 
 ## Additional AltSnap study notes
 
@@ -50,15 +70,13 @@ Important features RhaegarMove does not have yet:
 - Full keyboard hook state machine.
 - `ignorekey` / `ignoreclick` style sent-input guards.
 - `blockaltup` / end-key behavior.
-- Advanced blacklist format by process, title, and class.
-- DPI-aware restore sizing.
-- Snap-to-other-windows.
-- Smart restore metadata for snapped windows.
+- Advanced `process:title|class` blacklist format.
+- DPI-aware restore scaling.
 - Zone layout support.
 - MDI window support.
 - Transparent outline or hollow-drag mode.
 - Tray/config UI.
-- Worker thread for coalescing mouse move messages.
+- Runtime config reload command.
 
 ## Roadmap toward AltSnap-level quality
 
@@ -75,12 +93,11 @@ Status: in progress.
 Status: in progress.
 
 - Basic process/class/title blacklist exists.
-- DWM extended-frame bounds are generated into the build.
+- DWM extended-frame bounds are used by the geometry layer.
 - Per-monitor work-area handling is used by snapping helpers.
 
 Still missing:
 
-- Snapped restore metadata.
 - More complete `process:title|class` matching.
 
 ### Phase 3: snapping
@@ -88,26 +105,28 @@ Still missing:
 Status: in progress.
 
 - Monitor-edge snap exists.
-- Left/right/top/corner Aero-style snap is generated into the build.
-- `EnableAeroSnap` and `AeroThreshold` config options exist.
+- Left/right/top/corner Aero-style snap exists.
+- `EnableAeroSnap`, `AeroThreshold`, `AeroMaxSpeed`, and `AeroSpeedTau` config options exist.
+- Snap-to-other-windows exists for move and resize basics.
 
 Still missing:
 
-- Snap-to-other-windows.
-- Speed threshold to avoid accidental snap.
+- Smart snapped-window dimension sharing.
+- More exact speed smoothing.
 
 ### Phase 4: resize quality
 
-Status: started.
+Status: in progress.
 
-- Side/center resize region generation exists.
+- Side/center resize regions exist.
 - `ResizeCenterMode`, `CenterFraction`, and `SidesFraction` config options exist.
+- Symmetric center resize exists.
 - Resize still sends sizing messages during resize.
 
 Still missing:
 
-- True symmetric center resize.
 - More complete min/max sizing behavior.
+- Per-app resize allow/deny lists.
 
 ### Phase 5: optional advanced input
 
@@ -130,6 +149,47 @@ Still missing:
 - Tray UI.
 - Config UI.
 - Runtime logging.
+- Runtime reload command.
+
+### Phase 7: source cleanup
+
+Status: done for the active build.
+
+- `src/RhaegarMove.cs` is now a small app entry file.
+- Main logic has been split into focused source files.
+- `build.bat` compiles `src\*.cs` directly.
+- `tools/Prepare-Source.ps1` is no longer called by the build.
+
+Note: the retired script file may still exist in the repository if GitHub content deletion is blocked, but it is not part of the build path.
+
+### Phase 8: operation worker and state machine
+
+Status: started.
+
+- Mouse hook now delegates movement to `OperationWorker`.
+- Mouse move events are coalesced through a worker thread.
+- The hook callback no longer performs the heavy move/resize work directly.
+- Watchdog cleanup still exists.
+
+Still missing:
+
+- More detailed state telemetry.
+- Explicit cancel hotkey, intentionally deferred because there is no keyboard hook yet.
+
+### Phase 9: restore metadata and window snap
+
+Status: started.
+
+- `WindowRestoreStore` stores snapped-window restore size and flags with `SetProp/GetProp` plus fallback storage.
+- Aero snap writes restore metadata before snapping.
+- Dragging a snapped/maximized window uses restore metadata when available.
+- `SnapEngine` now collects other top-level windows and supports basic edge-to-window snapping.
+
+Still missing:
+
+- DPI-aware restore scaling.
+- FancyZones compatibility.
+- Sticky resize of adjacent snapped windows.
 
 ## Safety checklist before testing
 
@@ -141,4 +201,4 @@ Still missing:
 
 ## Known current status
 
-The current source still uses generated-source preparation in `tools/Prepare-Source.ps1`. The goal is to eventually clean `src/RhaegarMove.cs` directly, but generated-source preparation allows smaller, safer iterations while the project is still early.
+RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The code now has the correct direction for a maintainable implementation: modular source, a worker boundary, restore metadata, and snap-to-window basics. The next high-value area is more complete blacklist matching and more precise restore/DPI behavior.
