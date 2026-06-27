@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set "RHAEGAR_NO_PAUSE=1"
 call build.bat
 if errorlevel 1 (
   echo Build failed.
