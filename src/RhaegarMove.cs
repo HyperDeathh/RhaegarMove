@@ -26,6 +26,7 @@ namespace RhaegarMove
             Application.SetCompatibleTextRenderingDefault(false);
 
             settings = AppSettings.Load();
+            PreviewOverlay.Initialize();
             worker = new OperationWorker(settings);
             mouseHook = new MouseHook(settings, worker);
 
@@ -43,6 +44,8 @@ namespace RhaegarMove
 
         private static void Cleanup()
         {
+            PreviewOverlay.HideOverlay();
+
             if (mouseHook != null)
             {
                 mouseHook.Dispose();
