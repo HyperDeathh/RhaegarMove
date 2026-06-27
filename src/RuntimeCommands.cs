@@ -53,9 +53,11 @@ namespace RhaegarMove
             string text =
                 "RhaegarMove running=" + running + Environment.NewLine +
                 "config=" + GetConfigPath() + Environment.NewLine +
+                "configReport=" + Path.Combine(local, "config-report.txt") + Environment.NewLine +
                 "rules=" + Path.Combine(local, "rules.txt") + Environment.NewLine +
                 "preview=" + Path.Combine(local, "preview.txt") + Environment.NewLine +
                 "snapTargets=" + Path.Combine(local, "snap-targets.txt") + Environment.NewLine +
+                "snapScore=" + Path.Combine(local, "snap-score.txt") + Environment.NewLine +
                 "runtime=" + RuntimeControl.RuntimePath + Environment.NewLine +
                 "reloadRequest=" + RuntimeControl.ReloadRequestPath + Environment.NewLine +
                 "exitRequest=" + RuntimeControl.ExitRequestPath + Environment.NewLine;
