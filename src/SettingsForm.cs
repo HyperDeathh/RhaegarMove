@@ -32,7 +32,7 @@ namespace RhaegarMove
             this.afterSave = afterSave;
             Text = "RhaegarMove Settings";
             StartPosition = FormStartPosition.CenterScreen;
-            Size = new Size(500, 720);
+            Size = new Size(500, 760);
             MinimizeBox = false;
             MaximizeBox = false;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -46,7 +46,7 @@ namespace RhaegarMove
             TableLayoutPanel root = new TableLayoutPanel();
             root.Dock = DockStyle.Fill;
             root.ColumnCount = 2;
-            root.RowCount = 24;
+            root.RowCount = 26;
             root.Padding = new Padding(12);
             root.AutoScroll = true;
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55));
@@ -76,14 +76,28 @@ namespace RhaegarMove
             rules.Dock = DockStyle.Fill;
             rules.Height = 32;
             rules.Click += delegate { new RuleListForm(afterSave).ShowDialog(this); };
-            root.Controls.Add(rules, 0, root.RowCount - 5);
+            root.Controls.Add(rules, 0, root.RowCount - 7);
             root.SetColumnSpan(rules, 2);
+
+            Button resetGeneral = new Button();
+            resetGeneral.Text = "Reset general defaults";
+            resetGeneral.Dock = DockStyle.Fill;
+            resetGeneral.Height = 32;
+            resetGeneral.Click += delegate { ResetGeneralDefaults(); };
+            root.Controls.Add(resetGeneral, 0, root.RowCount - 6);
+
+            Button resetRules = new Button();
+            resetRules.Text = "Reset window rules";
+            resetRules.Dock = DockStyle.Fill;
+            resetRules.Height = 32;
+            resetRules.Click += delegate { ResetRuleDefaults(); };
+            root.Controls.Add(resetRules, 1, root.RowCount - 6);
 
             warningLabel = new Label();
             warningLabel.AutoSize = true;
             warningLabel.Dock = DockStyle.Fill;
             warningLabel.MaximumSize = new Size(440, 0);
-            root.Controls.Add(warningLabel, 0, root.RowCount - 4);
+            root.Controls.Add(warningLabel, 0, root.RowCount - 5);
             root.SetColumnSpan(warningLabel, 2);
 
             Button save = new Button();
@@ -91,14 +105,14 @@ namespace RhaegarMove
             save.Dock = DockStyle.Fill;
             save.Height = 32;
             save.Click += delegate { SaveAndReload(); };
-            root.Controls.Add(save, 0, root.RowCount - 3);
+            root.Controls.Add(save, 0, root.RowCount - 4);
             root.SetColumnSpan(save, 2);
 
             Label note = new Label();
             note.Text = "Tray icon is optional and disabled by default. Keep stop.bat as emergency fallback.";
             note.AutoSize = true;
             note.Dock = DockStyle.Fill;
-            root.Controls.Add(note, 0, root.RowCount - 2);
+            root.Controls.Add(note, 0, root.RowCount - 3);
             root.SetColumnSpan(note, 2);
         }
 
@@ -166,6 +180,26 @@ namespace RhaegarMove
 
         private void SaveAndReload()
         {
+            ConfigFileUpdater.SetGeneralValues(CurrentGeneralValues());
+            if (afterSave != null) afterSave();
+            Close();
+        }
+
+        private void ResetGeneralDefaults()
+        {
+            ConfigFileUpdater.SetGeneralValues(ConfigDefaults.General());
+            LoadValues(AppSettings.Load());
+            if (afterSave != null) afterSave();
+        }
+
+        private void ResetRuleDefaults()
+        {
+            ConfigFileUpdater.SetBlacklistValues(ConfigDefaults.Blacklist());
+            if (afterSave != null) afterSave();
+        }
+
+        private Dictionary<string, string> CurrentGeneralValues()
+        {
             Dictionary<string, string> values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             values["SnapThreshold"] = ((int)snapThreshold.Value).ToString();
             values["MinWidth"] = ((int)minWidth.Value).ToString();
@@ -183,9 +217,7 @@ namespace RhaegarMove
             values["EnableSnapDiagnostics"] = enableSnapDiagnostics.Checked.ToString().ToLowerInvariant();
             values["EnableTrayIcon"] = enableTrayIcon.Checked.ToString().ToLowerInvariant();
             values["StickyResize"] = stickyResize.Checked.ToString().ToLowerInvariant();
-            ConfigFileUpdater.SetGeneralValues(values);
-            if (afterSave != null) afterSave();
-            Close();
+            return values;
         }
     }
 }
