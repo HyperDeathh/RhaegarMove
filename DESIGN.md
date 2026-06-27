@@ -41,10 +41,10 @@ The source is modular:
 - `RuleValidation.cs`: validates blacklist/rule-list syntax and risky broad patterns.
 - `RuleDiagnostics.cs`: rule decision snapshots for debugging.
 - `RuntimeCommands.cs`: command-line diagnostics, settings UI launcher, status/control-mode report, and runtime control helpers.
-- `RuntimeControl.cs`: file-based reload and exit request markers.
+- `RuntimeControl.cs`: file-based reload/exit request markers and last successful reload tracking.
 - `RuntimeWatcher.cs`: file watcher for runtime request markers.
-- `SettingsForm.cs`: basic WinForms settings editor for safe options, with warnings and reset buttons.
-- `RuleListForm.cs`: basic blacklist/rule-list editor with reset default rules action.
+- `SettingsForm.cs`: basic WinForms settings editor for safe options, with warnings and reset confirmations.
+- `RuleListForm.cs`: blacklist/rule-list editor with inline validation and reset default rules action.
 - `TrayIcon.cs`: optional notification-area menu; disabled by default and not created unless enabled.
 - `SnapDiagnostics.cs`: snap target accept/reject report writer.
 - `SnapScoreDiagnostics.cs`: per-edge candidate scoring and final decision report writer.
@@ -54,7 +54,7 @@ The source is modular:
 - `WindowRestoreStore.cs`: SetProp/GetProp restore metadata with an in-process fallback dictionary.
 - `AppSettings.cs`: typed INI option loader with in-place reload and config issue tracking.
 
-`build.bat` compiles `src\*.cs` directly. It does not depend on generated source preparation.
+`build.bat` compiles `src\\*.cs` directly. It does not depend on generated source preparation.
 
 ## Roadmap toward AltSnap-level quality
 
@@ -97,7 +97,7 @@ Status: in progress.
 ### Phase 7: source cleanup
 Status: done for the active build.
 - Main logic has been split into focused source files.
-- `build.bat` compiles `src\*.cs` directly.
+- `build.bat` compiles `src\\*.cs` directly.
 
 ### Phase 8: operation worker and state machine
 Status: in progress.
@@ -134,7 +134,7 @@ Status: in progress.
 
 ### Phase 14: rule diagnostics
 Status: in progress.
-- `RuleDiagnostics` writes `%LOCALAPPDATA%\RhaegarMove\rules.txt`.
+- `RuleDiagnostics` writes `%LOCALAPPDATA%\\RhaegarMove\\rules.txt`.
 - Diagnostics include matched rule explanations.
 
 ### Phase 15: preview and outline foundation
@@ -151,7 +151,7 @@ Status: in progress.
 ### Phase 17: runtime control
 Status: in progress.
 - Supported commands: `--status`, `--settings`, `--config-path`, `--diagnose-cursor`, `--preview-status`, `--reload`, and `--request-exit`.
-- Runtime command output is persisted to `%LOCALAPPDATA%\RhaegarMove\runtime.txt`.
+- Runtime command output is persisted to `%LOCALAPPDATA%\\RhaegarMove\\runtime.txt`.
 
 ### Phase 18: diagnostics refinement
 Status: in progress.
@@ -253,33 +253,39 @@ Status: in progress.
 - Tray support remains configurable, but no tray icon is created unless explicitly enabled.
 
 ### Phase 37: rule validation
-Status: started.
+Status: in progress.
 - `RuleValidation` validates rule-list CSV fields and composite `process:title|class` syntax.
-- Warnings include missing keys, empty composite segments, too many separators, tabs, and broad `SnapList=*`.
+- Warnings include missing keys, empty composite segments, too many separators, tabs, repeated spaces, and broad `SnapList=*`.
 - Rule validation is included in `config-report.txt`.
 
-Still missing:
-- Inline validation directly inside `RuleListForm` while editing.
-- Examples next to each rule input.
+### Phase 40: inline rule validation UI
+Status: started.
+- `RuleListForm` now shows live rule validation warnings while editing.
+- Composite rule examples are shown next to rule-list labels.
+- Save prompts for confirmation if rule validation has warnings.
 
-### Phase 38: reset defaults
+Still missing:
+- Rich examples/help panel for each rule category.
+
+### Phase 38 / 41: reset defaults and confirmations
 Status: started.
 - `ConfigDefaults` centralizes resettable General and Blacklist defaults.
 - Settings UI has `Reset general defaults` and `Reset window rules` actions.
 - Rule-list editor has `Reset default window rules`.
+- Reset actions now ask for confirmation before applying.
 
 Still missing:
-- Confirmation dialog before reset.
-- Reset all command-line helper.
+- Reset-all command-line helper.
 
-### Phase 39: status/control mode report
+### Phase 39 / 42: status and last successful reload tracking
 Status: started.
 - `--status` reports `controlMode=file-marker+watcher`.
 - `--status` reports `settingsCommand=available`, `trayDefault=false`, and `trayIconConfigured=<value>`.
-- `--status` reports reload/exit request paths, pending marker status, runtime path, and runtime last write time.
+- `--status` reports reload/exit request paths, pending marker status, runtime path, runtime last write time, last reload file path, and last reload summary.
+- `RuntimeControl.MarkReloadApplied()` writes `%LOCALAPPDATA%\\RhaegarMove\\last-reload.txt` after a runtime reload succeeds.
 
 Still missing:
-- Last successful reload timestamp separate from runtime file timestamp.
+- Distinguishing reload source in more detail, such as settings UI vs helper script.
 
 ## Safety checklist before testing
 
@@ -291,4 +297,4 @@ Still missing:
 
 ## Known current status
 
-RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The project now has modular hook/worker geometry, restore metadata, snapping, advanced rules, diagnostics, config reload, safe exit request, preview overlay, preview-only commit mode, config validation, snap scoring, no-tray default UX, standalone settings UI, rule-list editing, rule validation, reset-to-defaults, and status/control-mode reporting. The next high-value area is inline rule validation, reset confirmations, and separate last successful reload tracking.
+RhaegarMove is still a clean-room AltSnap-inspired implementation, not an AltSnap source copy. The project now has modular hook/worker geometry, restore metadata, snapping, advanced rules, diagnostics, config reload, safe exit request, preview overlay, preview-only commit mode, config validation, snap scoring, no-tray default UX, standalone settings UI, rule-list editing with inline validation, reset-to-defaults confirmations, and last successful reload tracking. The next high-value area is reset-all CLI, richer rule examples, and reload-source tagging.
