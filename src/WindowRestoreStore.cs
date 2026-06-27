@@ -8,6 +8,7 @@ namespace RhaegarMove
         public int Width;
         public int Height;
         public int Flags;
+        public int Dpi;
     }
 
     internal static class RestoreFlags
@@ -24,26 +25,34 @@ namespace RhaegarMove
     {
         private const string PropSize = "RhaegarMove.RestoreSize";
         private const string PropFlags = "RhaegarMove.RestoreFlags";
+        private const string PropDpi = "RhaegarMove.RestoreDpi";
         private static readonly object Gate = new object();
         private static readonly Dictionary<IntPtr, RestoreData> Fallback = new Dictionary<IntPtr, RestoreData>();
 
         public static void Set(IntPtr hwnd, int width, int height, int flags)
+        {
+            Set(hwnd, width, height, flags, DpiHelper.GetWindowDpi(hwnd));
+        }
+
+        public static void Set(IntPtr hwnd, int width, int height, int flags, int dpi)
         {
             if (hwnd == IntPtr.Zero)
                 return;
 
             width = Math.Max(1, width);
             height = Math.Max(1, height);
+            dpi = Math.Max(1, dpi);
 
             long packed = ((long)(uint)height << 32) | (uint)width;
             bool ok1 = NativeMethods.SetProp(hwnd, PropSize, new IntPtr(packed));
             bool ok2 = NativeMethods.SetProp(hwnd, PropFlags, new IntPtr(flags));
-            if (ok1 && ok2)
+            bool ok3 = NativeMethods.SetProp(hwnd, PropDpi, new IntPtr(dpi));
+            if (ok1 && ok2 && ok3)
                 return;
 
             lock (Gate)
             {
-                Fallback[hwnd] = new RestoreData { Width = width, Height = height, Flags = flags };
+                Fallback[hwnd] = new RestoreData { Width = width, Height = height, Flags = flags, Dpi = dpi };
             }
         }
 
@@ -58,11 +67,13 @@ namespace RhaegarMove
             if (sizeProp != IntPtr.Zero && flagProp != IntPtr.Zero)
             {
                 long packed = sizeProp.ToInt64();
+                IntPtr dpiProp = NativeMethods.GetProp(hwnd, PropDpi);
                 data = new RestoreData
                 {
                     Width = (int)(packed & 0xffffffffL),
                     Height = (int)((packed >> 32) & 0xffffffffL),
-                    Flags = flagProp.ToInt32()
+                    Flags = flagProp.ToInt32(),
+                    Dpi = dpiProp == IntPtr.Zero ? 96 : dpiProp.ToInt32()
                 };
                 return data.Width > 0 && data.Height > 0;
             }
@@ -91,6 +102,7 @@ namespace RhaegarMove
 
             NativeMethods.RemoveProp(hwnd, PropSize);
             NativeMethods.RemoveProp(hwnd, PropFlags);
+            NativeMethods.RemoveProp(hwnd, PropDpi);
             lock (Gate)
             {
                 Fallback.Remove(hwnd);
